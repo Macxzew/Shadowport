@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Shadowport - FTP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-mono min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-screen-md bg-gray-900 border border-blue-500 rounded-xl shadow-xl px-4 sm:px-6 py-6 space-y-6 box-border overflow-hidden">
+    <h1 class="text-2xl sm:text-3xl font-bold text-blue-400 text-center">📁 FTP(S) Interface</h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <input id="host" placeholder="IP" class="w-full px-4 py-3 bg-blue-900/10 text-white rounded-lg border border-blue-500/20 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400 transition" />
+      <input id="port" type="number" value="21" placeholder="Port" class="w-full px-4 py-3 bg-blue-900/10 text-white rounded-lg border border-blue-500/20 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400 transition" />
+      <input id="username" placeholder="Username" class="w-full px-4 py-3 bg-blue-900/10 text-white rounded-lg border border-blue-500/20 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400 transition" />
+      <input id="password" type="password" placeholder="Password" class="w-full px-4 py-3 bg-blue-900/10 text-white rounded-lg border border-blue-500/20 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400 transition" />
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <input id="path" placeholder="/ (path)" class="w-full bg-blue-900/10 text-white rounded-lg border border-blue-500/20 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400 transition px-4 py-3" />
+      <label class="flex items-center gap-2">
+        <input id="ssl" type="checkbox" class="accent-blue-500" />
+        <span class="text-sm">SSL</span>
+      </label>
+      <button id="listBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-md transition">List</button>
+    </div>
+
+    <div id="result" class="bg-gray-800 p-4 rounded-md text-sm text-gray-300 h-64 overflow-y-auto border border-gray-700"></div>
+
+    <div class="text-center">
+      <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
+    </div>
+  </div>
+
+  <input type="file" id="uploadInput" class="hidden" />
+
+  <div id="popup" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center">
+    <div class="bg-gray-800 border border-blue-500 rounded-xl shadow-xl max-w-md w-full p-6 text-white text-center space-y-4">
+      <div id="popupMsg" class="text-sm"></div>
+      <button onclick="document.getElementById('popup').classList.add('hidden')" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded transition">❌ Close</button>
+    </div>
+  </div>
+  <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
+    Made with 💕 by
+    <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
+      Macxzew
+    </a>
+  </footer>
+  <script>
+    let credentials = {};
+    let cache = {};
+
+    document.getElementById("listBtn").addEventListener("click", () => {
+      credentials = {
+        host: document.getElementById("host").value,
+        port: parseInt(document.getElementById("port").value),
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value,
+        secure: document.getElementById("ssl").checked
+      };
+      const root = document.getElementById("result");
+      root.innerHTML = "";
+      renderDirectory(document.getElementById("path").value || "/", root);
+    });
+
+    function pathJoin(a, b) {
+      if (!a.endsWith("/")) a += "/";
+      return (a + b).replace(/\/+/g, "/");
+    }
+
+    async function renderDirectory(path, container, depth = 0) {
+      if (cache[path]) {
+        displayFiles(path, container, cache[path], depth);
+        return;
+      }
+      const res = await fetch("/api/ftp/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...credentials, path })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        cache[path] = data.files;
+        displayFiles(path, container, data.files, depth);
+      } else {
+        showPopup(`❌ ${data.error}`);
+      }
+    }
+
+    function displayFiles(currentPath, container, files, depth) {
+      files.forEach(f => {
+        if (!f.name || f.name === "." || f.name === "..") return;
+
+        const fullPath = pathJoin(currentPath, f.name);
+        const isDir = f.type === "directory" || f.isDirectory === true;
+
+        const row = document.createElement("div");
+        row.className = "flex justify-between items-center py-1 border-b border-gray-700";
+        row.style.paddingLeft = `${depth * 20}px`;
+
+        const name = document.createElement("div");
+        name.className = "flex items-center gap-2";
+        name.innerHTML = `${isDir ? '📁' : '📄'} <b>${f.name}</b>`;
+
+        if (isDir) {
+          const btn = document.createElement("button");
+          btn.textContent = "[+]";
+          btn.className = "ml-2 text-xs text-blue-300 underline";
+
+          let expanded = false;
+          let subContainer = null;
+
+          btn.onclick = async () => {
+            if (expanded) {
+              subContainer.remove();
+              btn.textContent = "[+]";
+              expanded = false;
+            } else {
+              subContainer = document.createElement("div");
+              container.insertBefore(subContainer, row.nextSibling);
+              await renderDirectory(fullPath, subContainer, depth + 1);
+              btn.textContent = "[-]";
+              expanded = true;
+            }
+          };
+          name.appendChild(btn);
+
+          const importBtn = document.createElement("button");
+          importBtn.textContent = "📤";
+          importBtn.className = "text-blue-400 hover:underline ml-2";
+          importBtn.onclick = () => {
+            const input = document.getElementById("uploadInput");
+            input.onchange = async () => {
+              const file = input.files[0];
+              if (!file) return;
+              const formData = new FormData();
+              formData.append("file", file);
+              formData.append("host", credentials.host);
+              formData.append("port", credentials.port);
+              formData.append("username", credentials.username);
+              formData.append("password", credentials.password);
+              formData.append("secure", credentials.secure);
+              formData.append("path", pathJoin(fullPath, file.name));
+              const res = await fetch("/api/ftp/upload", {
+                method: "POST",
+                body: formData
+              });
+              const result = await res.json();
+              if (result.ok) {
+                cache[fullPath] = null;
+                if (expanded && subContainer) {
+                  subContainer.innerHTML = "";
+                  await renderDirectory(fullPath, subContainer, depth + 1);
+                }
+              } else {
+                showPopup("❌ Upload error: " + result.error);
+              }
+            };
+            input.click();
+          };
+          name.appendChild(importBtn);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "flex gap-2";
+
+        if (!isDir) {
+          const dl = document.createElement("a");
+          dl.href = `/api/ftp/download?host=${encodeURIComponent(credentials.host)}&port=${encodeURIComponent(credentials.port)}&user=${encodeURIComponent(credentials.username)}&pass=${encodeURIComponent(credentials.password)}&secure=${credentials.secure}&path=${encodeURIComponent(fullPath)}`;
+          dl.className = "text-green-400 hover:underline";
+          dl.textContent = "⬇️";
+          actions.appendChild(dl);
+        }
+
+        const del = document.createElement("button");
+        del.className = "text-red-400 hover:underline";
+        del.textContent = "🗑️";
+        del.onclick = async () => {
+          if (!confirm("Delete this file?")) return;
+          const res = await fetch("/api/ftp/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...credentials, path: fullPath })
+          });
+          const r = await res.json();
+          if (r.ok) {
+            cache[currentPath] = null;
+            container.innerHTML = "";
+            await renderDirectory(currentPath, container, depth);
+          } else {
+            showPopup("❌ Delete error: " + r.error);
+          }
+        };
+        actions.appendChild(del);
+
+        row.appendChild(name);
+        row.appendChild(actions);
+        container.appendChild(row);
+      });
+    }
+
+    function showPopup(message) {
+      document.getElementById("popupMsg").textContent = message;
+      document.getElementById("popup").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>

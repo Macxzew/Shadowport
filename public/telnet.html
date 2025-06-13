@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Shadowport - Telnet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+  <style>
+    html, body {
+      overflow-x: hidden;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-mono min-h-screen flex items-center justify-center p-4 overflow-x-hidden">
+  <div class="w-full max-w-screen-md bg-gray-900 border border-yellow-500 rounded-xl shadow-xl px-4 sm:px-6 py-6 space-y-6 box-border overflow-hidden">
+    <h1 class="text-2xl sm:text-3xl font-bold text-yellow-400 text-center">📱 Telnet Terminal</h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <input id="host" placeholder="IP" class="w-full px-4 py-3 bg-yellow-900/10 text-white rounded-lg border border-yellow-500/20 focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder:text-gray-400 transition" />
+      <input id="port" type="number" placeholder="Port" value="23" class="w-full px-4 py-3 bg-yellow-900/10 text-white rounded-lg border border-yellow-500/20 focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder:text-gray-400 transition" />
+      <input id="login" placeholder="Username (optional)" class="w-full px-4 py-3 bg-yellow-900/10 text-white rounded-lg border border-yellow-500/20 focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder:text-gray-400 transition" />
+      <input id="password" type="password" placeholder="Password (optional)" class="w-full px-4 py-3 bg-yellow-900/10 text-white rounded-lg border border-yellow-500/20 focus:ring-2 focus:ring-yellow-500 focus:outline-none placeholder:text-gray-400 transition" />
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:justify-between items-center gap-4">
+      <button id="connectBtn" class="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-500 px-6 py-2 rounded-md transition">
+        Connect
+      </button>
+      <button id="fullscreenBtn" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-md text-sm">
+        🖥️ Fullscreen
+      </button>
+    </div>
+
+    <div id="terminalContainer" class="w-full border border-gray-700 rounded-lg overflow-hidden" style="height: 35vh; min-height: 250px;">
+      <div id="terminal" class="h-full w-full overflow-y-auto"></div>
+    </div>
+
+    <div class="text-center">
+      <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
+    </div>
+  </div>
+  <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
+    Made with 💕 by
+    <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
+      Macxzew
+    </a>
+  </footer>
+  <script>
+    const term = new Terminal({ cursorBlink: true });
+    term.open(document.getElementById("terminal"));
+
+    const ws = new WebSocket(`wss://${location.host}`);
+    let isConnected = false;
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "data") term.write(msg.data);
+      else if (msg.type === "ready") {
+        term.writeln("\r\n✅ Connected to Telnet server.");
+        toggleConnectionUI(true);
+        const login = document.getElementById("login").value;
+        const password = document.getElementById("password").value;
+        if (login) setTimeout(() => ws.send(JSON.stringify({ type: "input", data: login + "\n" })), 500);
+        if (password) setTimeout(() => ws.send(JSON.stringify({ type: "input", data: password + "\n" })), 1000);
+      } else if (msg.type === "error") {
+        term.writeln("\r\n❌ Error: " + msg.data);
+        toggleConnectionUI(false);
+      } else if (msg.type === "closed") {
+        term.writeln("\r\n🔌 Connection closed.");
+        toggleConnectionUI(false);
+      }
+    };
+
+    document.getElementById("connectBtn").addEventListener("click", () => {
+      if (isConnected) {
+        ws.close();
+        location.reload();
+        return;
+      }
+
+      const host = document.getElementById("host").value;
+      const port = parseInt(document.getElementById("port").value);
+      ws.send(JSON.stringify({ type: "telnet-connect", host, port }));
+    });
+
+    function toggleConnectionUI(state) {
+      isConnected = state;
+      const btn = document.getElementById("connectBtn");
+      if (state) {
+        btn.textContent = "Disconnect";
+        btn.classList.remove("bg-yellow-600");
+        btn.classList.add("bg-red-600", "hover:bg-red-500");
+      } else {
+        btn.textContent = "Connect";
+        btn.classList.remove("bg-red-600");
+        btn.classList.add("bg-yellow-600", "hover:bg-yellow-500");
+      }
+    }
+
+    term.onData((data) => {
+      if (isConnected) {
+        ws.send(JSON.stringify({ type: "input", data }));
+      }
+    });
+
+    document.getElementById("fullscreenBtn").addEventListener("click", () => {
+      const container = document.getElementById("terminalContainer");
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => alert(err));
+      } else {
+        document.exitFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>
