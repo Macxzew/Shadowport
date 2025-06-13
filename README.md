@@ -1,7 +1,7 @@
 <h1 align="center">Shadowport <img src="https://github.com/Macxzew/Shadowport/blob/main/assets/net.gif" width="30px" /></h1>
 
 <p align="center">
-  <a href="https://glitch.com/~shadowport">
+  <a href="https://shadowport.glitch.me/">
     <img alt="Glitch" src="https://img.shields.io/badge/live%20demo-glitch-purple?logo=glitch">
   </a>
 </p>
