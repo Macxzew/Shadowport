@@ -13,25 +13,25 @@ module.exports = (app) => {
       const url = new URL(target);
       const hostname = url.hostname;
 
-      try {
-        const dnsResult = await dns.lookup(hostname);
-        result.dns = dnsResult;
-        result.ip = dnsResult.address;
-      } catch (e) {
+      const dnsPromise = dns.lookup(hostname).then(r => {
+        result.dns = r;
+        result.ip = r.address;
+      }).catch(e => {
         result.dns = { error: e.message };
-      }
+      });
 
-      try {
-        const txt = await dns.resolveTxt(hostname);
+      const txtPromise = dns.resolveTxt(hostname).then(txt => {
         result.txtRecords = txt.flat();
-      } catch (e) {
+      }).catch(e => {
         result.txtRecords = { error: e.message };
-      }
+      });
+
+      await Promise.all([dnsPromise, txtPromise]);
 
       let response;
       try {
         const start = Date.now();
-        response = await axios.get(target, { maxRedirects: 5 });
+        response = await axios.get(target, { maxRedirects: 5, timeout: 5000 });
         result.responseTimeMs = Date.now() - start;
         result.status = response.status;
         result.finalUrl = response.request.res.responseUrl;
@@ -67,10 +67,7 @@ module.exports = (app) => {
         result.title = $("title").text() || null;
         result.generator = $('meta[name="generator"]').attr("content") || null;
 
-        result.cmsDetection = {
-          isWordPress: false,
-          evidence: []
-        };
+        result.cmsDetection = { isWordPress: false, evidence: [] };
         if (result.generator?.toLowerCase().includes("wordpress")) {
           result.cmsDetection.isWordPress = true;
           result.cmsDetection.evidence.push("Meta generator tag");
@@ -128,12 +125,11 @@ module.exports = (app) => {
           usesReact: response.data.includes("data-reactroot")
         };
 
-        try {
-          const manifest = await axios.get(`${url.origin}/manifest.json`);
-          result.manifest = manifest.data;
-        } catch {
+        const manifestPromise = axios.get(`${url.origin}/manifest.json`).then(r => {
+          result.manifest = r.data;
+        }).catch(() => {
           result.manifest = "Not found";
-        }
+        });
 
         result.seoMeta = {
           robots: $('meta[name="robots"]').attr("content") || null,
@@ -148,42 +144,42 @@ module.exports = (app) => {
         if (response.headers["x-powered-by"]?.toLowerCase().includes("php/5")) score -= 2;
         result.securityScore = Math.max(0, score);
 
+        await manifestPromise;
+
       } catch (e) {
         result.http = { error: e.message };
       }
 
-      result.exposedPaths = {};
-      const sensitiveFiles = ["/.env", "/.git", "/config.php", "/admin", "/.htaccess", "/composer.json", "/phpinfo.php"];
-      for (const path of sensitiveFiles) {
+      const sensitiveFiles = [
+        "/.env", "/.git", "/.htaccess", "/.DS_Store", "/config.php", "/phpinfo.php",
+        "/admin", "/wp-admin", "/wp-login.php", "/xmlrpc.php", "/readme.html",
+        "/composer.json", "/vendor/composer/installed.json",
+        "/setup", "/install.php", "/server-status", "/glpi", "/phpmyadmin", "/pma"
+      ];
+      const exposedChecks = sensitiveFiles.map(async (path) => {
         try {
           const r = await axios.get(`${url.origin}${path}`);
-          result.exposedPaths[path] = `⚠️ HTTP ${r.status}`;
+          return [path, `⚠️ HTTP ${r.status}`];
         } catch {
-          result.exposedPaths[path] = "❌ Not found";
+          return [path, "❌ Not found"];
         }
-      }
+      });
+      result.exposedPaths = Object.fromEntries(await Promise.all(exposedChecks));
 
-      for (const [key, path] of Object.entries({
+      const metaFiles = {
         robots: "/robots.txt",
         sitemap: "/sitemap.xml",
         securityTxt: "/.well-known/security.txt"
-      })) {
+      };
+      const metaChecks = Object.entries(metaFiles).map(async ([key, path]) => {
         try {
           const r = await axios.get(`${url.origin}${path}`);
-          result[key] = r.data;
+          return [key, r.data];
         } catch {
-          result[key] = "Not found";
+          return [key, "Not found"];
         }
-      }
-
-      if (result.ip) {
-        try {
-          const ipInfo = await axios.get(`http://ip-api.com/json/${result.ip}`);
-          result.ipInfo = ipInfo.data;
-        } catch {
-          result.ipInfo = { error: "IP info unavailable" };
-        }
-      }
+      });
+      Object.assign(result, Object.fromEntries(await Promise.all(metaChecks)));
 
       const getSSL = () => new Promise((resolve) => {
         const socket = tls.connect(443, hostname, { servername: hostname }, () => {
@@ -198,14 +194,16 @@ module.exports = (app) => {
         });
         socket.on("error", () => resolve({ error: "SSL not available" }));
       });
-      result.ssl = await getSSL();
 
-      try {
-        const labs = await axios.get(`https://api.ssllabs.com/api/v3/analyze?host=${hostname}&publish=off`);
-        result.sslLabs = labs.data;
-      } catch {
-        result.sslLabs = "Unavailable";
-      }
+      const [ipInfo, sslCert, sslLabsResult] = await Promise.all([
+        result.ip ? axios.get(`http://ip-api.com/json/${result.ip}`).then(r => r.data).catch(() => ({ error: "IP info unavailable" })) : null,
+        getSSL(),
+        axios.get(`https://api.ssllabs.com/api/v3/analyze?host=${hostname}&publish=off`).then(r => r.data).catch(() => "Unavailable")
+      ]);
+
+      result.ipInfo = ipInfo;
+      result.ssl = sslCert;
+      result.sslLabs = sslLabsResult;
 
       try {
         const scan = await axios.post("https://urlscan.io/api/v1/scan/", {
