@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link id="favicon" rel="icon" href="https://cdn.glitch.global/45530d4d-975d-421e-b45c-2e0121ffa505/net.png?v=1749780054384" type="image/x-icon">
+  <title>Shadowport - Web Check</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    @keyframes spinPause {
+      0%, 20% { transform: rotate(0deg); }
+      40% { transform: rotate(180deg); }
+      60% { transform: rotate(360deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .animate-scanner {
+      animation: spinPause 2s linear infinite;
+      transform-origin: center;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-mono flex flex-col min-h-screen overflow-x-hidden">
+  <main class="flex-grow p-6">
+    <div class="max-w-7xl mx-auto">
+      <h1 class="text-3xl font-bold text-blue-400 mb-6 text-center">🔍 Web Check</h1>
+      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+        <input id="urlInput" type="text" placeholder="https://example.com" class="flex-1 px-4 py-2 bg-gray-800 border border-blue-500 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button id="scanBtn" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg">Scan</button>
+      </div>
+      <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+  </main>
+
+  <footer class="text-xs text-gray-500 text-center w-full py-4 border-t border-gray-800">
+    Made with ❤️ by
+    <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
+      Macxzew
+    </a>
+  </footer>
+
+  <script>
+    const scanBtn = document.getElementById("scanBtn");
+    const cardsContainer = document.getElementById("cardsContainer");
+
+    function createExpandableBlock(text) {
+      const wrapper = document.createElement("div");
+      const content = document.createElement("div");
+      const button = document.createElement("button");
+
+      content.className = "overflow-hidden max-h-24 transition-all duration-300 text-white text-sm leading-snug whitespace-pre-wrap break-words";
+      content.textContent = text;
+
+      button.className = "text-blue-400 text-xs mt-1 hover:underline";
+      button.textContent = "Afficher plus";
+      button.style.display = "none";
+
+      let expanded = false;
+      button.onclick = () => {
+        expanded = !expanded;
+        content.classList.toggle("max-h-24", !expanded);
+        content.classList.toggle("max-h-none", expanded);
+        button.textContent = expanded ? "Afficher moins" : "Afficher plus";
+      };
+
+      setTimeout(() => {
+        if (content.scrollHeight > content.clientHeight + 10) {
+          button.style.display = "inline";
+        }
+      }, 100);
+
+      wrapper.appendChild(content);
+      wrapper.appendChild(button);
+      return wrapper;
+    }
+
+    function formatValue(value, key = "") {
+      const longKeys = [
+        "content-security-policy-report-only",
+        "cross-origin-opener-policy-report-only",
+        "report-to",
+        "alt-svc",
+        "strict-transport-security"
+      ];
+
+      if (longKeys.includes(key) || (typeof value === "string" && value.length > 150)) {
+        return createExpandableBlock(value);
+      }
+
+      if (Array.isArray(value)) {
+        const fragment = document.createDocumentFragment();
+        value.forEach((v, i) => {
+          const line = document.createElement("div");
+          line.innerHTML = `<span class="text-blue-300">${i}</span>: <span class="text-white">${typeof v === 'object' ? JSON.stringify(v, null, 2) : v}</span>`;
+          fragment.appendChild(line);
+        });
+        return fragment;
+      }
+
+      if (typeof value === "object" && value !== null) {
+        const fragment = document.createDocumentFragment();
+        Object.entries(value).forEach(([k, v]) => {
+          const line = document.createElement("div");
+          const label = document.createElement("span");
+          label.className = "text-blue-300";
+          label.textContent = `${k}: `;
+
+          const content = formatValue(v, k);
+
+          line.appendChild(label);
+          if (content instanceof Node) {
+            line.appendChild(content);
+          } else {
+            const span = document.createElement("span");
+            span.className = "text-white";
+            span.textContent = content;
+            line.appendChild(span);
+          }
+
+          fragment.appendChild(line);
+        });
+        return fragment;
+      }
+
+      const span = document.createElement("span");
+      span.className = "text-white";
+      span.textContent = `${value}`;
+      return span;
+    }
+
+    function createCard(title, content) {
+      const card = document.createElement("div");
+      card.className = "bg-gray-900 border border-blue-500 rounded-lg p-4 overflow-auto max-h-[500px]";
+
+      const heading = document.createElement("h2");
+      heading.className = "text-blue-400 font-bold text-lg mb-2";
+      heading.textContent = title;
+      card.appendChild(heading);
+
+      const body = document.createElement("div");
+      body.className = "text-sm space-y-1";
+
+      const rendered = formatValue(content);
+      body.appendChild(rendered);
+
+      card.appendChild(body);
+      return card;
+    }
+
+    scanBtn.addEventListener("click", async () => {
+      const url = document.getElementById("urlInput").value.trim();
+      if (!url) return;
+      cardsContainer.innerHTML = `<p class='text-white text-lg flex items-center gap-2'><span class="inline-block animate-scanner">⏳</span> Scanning...</p>`;
+
+      try {
+        const res = await fetch(`/scan?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        cardsContainer.innerHTML = "";
+
+        const displaySections = {
+          "Title": data.title,
+          "Favicon": data.favicon,
+          "CMS / Generator": data.generator,
+          "CMS Detection": data.cmsDetection,
+          "Web Server": data.webServer,
+          "Response Time (ms)": data.responseTimeMs,
+          "IP Info": data.ipInfo,
+          "DNS": data.dns,
+          "TXT Records": data.txtRecords,
+          "HTTP Headers": data.headers,
+          "Set-Cookie Headers": data.cookies,
+          "Security Headers": data.securityHeaders,
+          "Tech Headers": data.techHeaders,
+          "Exposed Paths": data.exposedPaths,
+          "SSL Certificate": data.ssl,
+          "SSL Labs": data.sslLabs?.endpoints?.map(e => `IP: ${e.ipAddress} - Grade: ${e.grade}`),
+          "Social Tags": data.socialTags,
+          "Final URL": data.finalUrl,
+          "HTTP Version": data.httpVersion,
+          "Charset": data.charset,
+          "Language": data.language,
+          "DOM Stats": data.domStats,
+          "Manifest": data.manifest,
+          "Frontend Frameworks": data.frontendFrameworks,
+          "SEO Meta": data.seoMeta,
+          "Robots.txt": data.robots,
+          "Sitemap": data.sitemap,
+          "Security.txt": data.securityTxt,
+          "Links (Internal)": data.links?.internal,
+          "Links (External)": data.links?.external,
+          "JavaScript Libraries": data.javascriptLibs,
+          "URLScan": data.urlScan,
+          "Security Score": data.securityScore
+        };
+
+        for (const [section, content] of Object.entries(displaySections)) {
+          if (content) cardsContainer.appendChild(createCard(section, content));
+        }
+
+      } catch (err) {
+        cardsContainer.innerHTML = `<p class='text-red-500'>❌ Error: ${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

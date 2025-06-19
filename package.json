@@ -1,7 +1,7 @@
 {
   "name": "shadowport",
   "version": "1.0.0",
-  "description": "Shadowport is a multi-protocol remote administration panel (SSH, FTP, SFTP, Telnet) developed in Node.js. ",
+  "description": "Interface de proxy SSH / FTP / SFTP / Telnet",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -13,7 +13,9 @@
     "multer": "^1.4.4",
     "ssh2": "^1.13.0",
     "ssh2-sftp-client": "^7.1.0",
-    "ws": "^8.14.2"
+    "ws": "^8.14.2",
+    "axios": "^1.6.0",
+    "cheerio": "^0.22.0"
   },
   "engines": {
     "node": ">=14.0.0"

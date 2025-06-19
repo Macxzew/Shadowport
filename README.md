@@ -6,16 +6,20 @@
   </a>
 </p>
 
-> **Shadowport** is a multi-protocol remote administration panel (SSH, FTP, SFTP, Telnet) developed in **Node.js**.  
-> It allows system administrators to interact with remote machines through a sleek, real-time web interface.
+> **Shadowport** is a multi-protocol remote administration panel (SSH, FTP, SFTP, Telnet, WebCheck) developed in **Node.js**.  
+> It allows system administrators to interact with remote machines and scan websites through a sleek, real-time web interface.
 
 <img alt="Shadowport UI" src="https://raw.githubusercontent.com/Macxzew/shadowport/main/assets/ui.png" width="1000"/>
+
+---
 
 ## ⚙️ Features
 
 - 🔐 **SSH** live terminal (via WebSocket)
 - 📂 **SFTP & FTP** file management (upload, delete, download)
 - 📡 **Telnet** interface via TCP relay
+- 🌐 **WebCheck** to scan and analyze website metadata, headers, DNS, SSL and more
+- 📊 Real-time scan cards with expandable content
 - ⚡ Lightweight and responsive interface
 - 🎨 Built with TailwindCSS
 

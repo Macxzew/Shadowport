@@ -12,7 +12,7 @@ const { Readable } = require("stream");
 
 const upload = multer({ storage: multer.memoryStorage() });
 const app = express();
-const port = 3000;
+const port = 8000;
 
 app.use(express.static("public"));
 app.use(express.json());
@@ -28,8 +28,12 @@ app.get("/ssh", (req, res) => res.sendFile(__dirname + "/public/ssh.html"));
 app.get("/ftp", (req, res) => res.sendFile(__dirname + "/public/ftp.html"));
 app.get("/sftp", (req, res) => res.sendFile(__dirname + "/public/sftp.html"));
 app.get("/telnet", (req, res) => res.sendFile(__dirname + "/public/telnet.html"));
+app.get("/webcheck", (req, res) => res.sendFile(__dirname + "/public/webcheck.html"));
+
 
 // Import des routes segmentées
 require("./routes/ftp")(app, ftp, path, os, fs, Readable, upload);
 require("./routes/sftp")(app, SFTPClient, path, Readable, upload);
-require("./routes/ssh")(wss, Client, net);
+require("./routes/ssh")(wss, Client);
+require("./routes/telnet")(wss, net);
+require("./routes/webcheck")(app);

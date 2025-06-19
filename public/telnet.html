@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <link rel="icon" href="https://cdn.glitch.global/45530d4d-975d-421e-b45c-2e0121ffa505/net.png?v=1749780054384" />
+  <link id="favicon" rel="icon" href="https://cdn.glitch.global/45530d4d-975d-421e-b45c-2e0121ffa505/net.png?v=1749780054384" type="image/x-icon">
   <title>Shadowport - Telnet</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
@@ -17,8 +17,10 @@
       -webkit-appearance: none;
       margin: 0;
     }
-    input[type=number] {
-      -moz-appearance: textfield;
+    input[type="number"] {
+      appearance: textfield;         /* propriété standard */
+      -moz-appearance: textfield;   /* Firefox */
+      -webkit-appearance: none;     /* Chrome, Safari */
     }
   </style>
 </head>
@@ -60,7 +62,7 @@
     const term = new Terminal({ cursorBlink: true });
     term.open(document.getElementById("terminal"));
 
-    const ws = new WebSocket(`wss://${location.host}`);
+    const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`);
     let isConnected = false;
 
     ws.onmessage = (e) => {
