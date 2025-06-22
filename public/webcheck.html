@@ -28,15 +28,17 @@
 <body class="bg-black text-white font-mono flex flex-col min-h-screen overflow-x-hidden">
   <main class="flex-grow p-6">
     <div class="max-w-7xl mx-auto">
-      <h1 class="text-3xl font-bold text-blue-400 mb-6 text-center">🔍 Web Check</h1>
+      <h1 class="text-3xl font-bold text-cyan-400 mb-6 text-center">🔍 Web Check</h1>
       <div class="flex flex-col sm:flex-row gap-4 mb-6">
-        <input id="urlInput" type="text" placeholder="https://example.com" class="flex-1 px-4 py-2 bg-gray-800 border border-blue-500 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <button id="scanBtn" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg">Scan</button>
+        <input id="urlInput" type="text" placeholder="https://example.com" class="flex-1 px-4 py-2 bg-gray-800 border border-cyan-500 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+        <button id="scanBtn" class="bg-cyan-600 hover:bg-cyan-500 px-6 py-2 rounded-lg">Scan</button>
       </div>
       <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
   </main>
-
+  <div class="text-center">
+    <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
+  </div>
   <footer class="text-xs text-gray-500 text-center w-full py-4 border-t border-gray-800">
     Made with ❤️ by
     <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
@@ -135,7 +137,7 @@
 
     function createCard(title, content) {
       const card = document.createElement("div");
-      card.className = "bg-gray-900 border border-blue-500 rounded-lg p-4 overflow-auto max-h-[500px]";
+      card.className = "bg-gray-900 border border-cyan-500 rounded-lg p-4 overflow-auto max-h-[500px]";
 
       const heading = document.createElement("h2");
       heading.className = "text-blue-400 font-bold text-lg mb-2";
