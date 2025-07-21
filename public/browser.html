@@ -54,16 +54,22 @@
         const html = await res.text();
         viewer.innerHTML = html;
 
-        // Intercept all link clicks to re-proxy
+        // --- Intercepte tous les clics sur les liens à l'intérieur du viewer ---
         viewer.querySelectorAll('a[href]').forEach(a => {
-          a.addEventListener('click', ev => {
+          a.addEventListener('click', function(ev) {
             const target = a.getAttribute('href');
-            if (target && !target.startsWith('javascript:') && !target.startsWith('#')) {
+            // Ignore ancre/javascript/mailto
+            if (
+              target &&
+              !target.startsWith('javascript:') &&
+              !target.startsWith('#') &&
+              !target.startsWith('mailto:')
+            ) {
               ev.preventDefault();
               let nextUrl;
               try { nextUrl = new URL(target, url).href; } catch { nextUrl = target; }
               urlInput.value = nextUrl;
-              loadProxyPage(nextUrl);
+              loadProxyPage(nextUrl); // Recharge le viewer
             }
           });
         });
