@@ -28,6 +28,7 @@ app.get("/ssh", (req, res) => res.sendFile(__dirname + "/public/ssh.html"));
 app.get("/ftp", (req, res) => res.sendFile(__dirname + "/public/ftp.html"));
 app.get("/sftp", (req, res) => res.sendFile(__dirname + "/public/sftp.html"));
 app.get("/telnet", (req, res) => res.sendFile(__dirname + "/public/telnet.html"));
+app.get("/browser", (req, res) => res.sendFile(__dirname + "/public/browser.html"));
 app.get("/webcheck", (req, res) => res.sendFile(__dirname + "/public/webcheck.html"));
 
 
