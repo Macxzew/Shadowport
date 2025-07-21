@@ -56,22 +56,28 @@
 
         // --- Intercepte tous les clics sur les liens à l'intérieur du viewer ---
         viewer.querySelectorAll('a[href]').forEach(a => {
-          a.addEventListener('click', function(ev) {
-            const target = a.getAttribute('href');
-            // Ignore ancre/javascript/mailto
-            if (
-              target &&
-              !target.startsWith('javascript:') &&
-              !target.startsWith('#') &&
-              !target.startsWith('mailto:')
-            ) {
-              ev.preventDefault();
-              let nextUrl;
-              try { nextUrl = new URL(target, url).href; } catch { nextUrl = target; }
-              urlInput.value = nextUrl;
-              loadProxyPage(nextUrl); // Recharge le viewer
-            }
-          });
+            a.addEventListener('click', function(ev) {
+                const target = a.getAttribute('href');
+                if (
+                target &&
+                !target.startsWith('javascript:') &&
+                !target.startsWith('#') &&
+                !target.startsWith('mailto:')
+                ) {
+                ev.preventDefault();
+                let nextUrl;
+                // Si le lien est déjà proxyfié ("/proxy?url="), on l'utilise
+                if (target.startsWith('/proxy?url=')) {
+                    loadProxyPage(target.split('/proxy?url=')[1]);
+                    urlInput.value = decodeURIComponent(target.split('/proxy?url=')[1]);
+                } else {
+                    // Sinon, on fait comme d'hab
+                    try { nextUrl = new URL(target, url).href; } catch { nextUrl = target; }
+                    urlInput.value = nextUrl;
+                    loadProxyPage(nextUrl);
+                }
+                }
+            });
         });
       } catch (e) {
         viewer.innerHTML = `<div class="text-red-400 text-center py-6">❌ Error loading page: <span class="font-mono">${e}</span></div>`;
