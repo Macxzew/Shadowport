@@ -1,8 +1,6 @@
-// routes/browser.js
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-// Petite fonction de validation d'URL externe (anti SSRF de base)
 function isValidHttpUrl(str) {
   try {
     const url = new URL(str);
@@ -12,99 +10,188 @@ function isValidHttpUrl(str) {
   }
 }
 
+function isProbablyHtml(contentType) {
+  if (!contentType) return false;
+  return contentType.includes("text/html");
+}
+
+function getRootUrl(currentUrl) {
+  try {
+    const u = new URL(currentUrl);
+    return `${u.protocol}//${u.host}/`;
+  } catch {
+    return currentUrl;
+  }
+}
+
+function getParentUrl(currentUrl) {
+  try {
+    const u = new URL(currentUrl);
+    let parent = u.pathname;
+    if (parent.endsWith("/")) parent = parent.slice(0, -1);
+    parent = parent.substring(0, parent.lastIndexOf("/") + 1);
+    if (!parent || parent === "/") return getRootUrl(currentUrl);
+    return `${u.protocol}//${u.host}${parent}`;
+  } catch {
+    return currentUrl;
+  }
+}
+
+// Pour comparer domaines et sous-domaines
+function getDomain(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    // Retourne le domaine racine
+    return u.hostname.split('.').slice(-2).join('.');
+  } catch {
+    return "";
+  }
+}
+function getHost(urlStr) {
+  try {
+    return new URL(urlStr).host;
+  } catch {
+    return "";
+  }
+}
+
 module.exports = function(app) {
-  // Proxy principal (HTML)
-  app.get("/proxy", async (req, res) => {
+  app.get("/explore", async (req, res) => {
     const url = req.query.url;
-    if (!url || !isValidHttpUrl(url)) return res.status(400).send("Missing or invalid url");
+    if (!url || !isValidHttpUrl(url)) {
+      return res.status(400).send("Missing or invalid url");
+    }
     try {
-      // UA desktop pour éviter les redirs mobiles
       const response = await axios.get(url, {
-        responseType: "text",
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36" },
-        maxRedirects: 5,
-        timeout: 10000,
-        validateStatus: s => s < 400 // laisse passer 3xx, 2xx
+        responseType: "arraybuffer",
+        headers: { "User-Agent": "Mozilla/5.0" },
+        timeout: 20000,
+        validateStatus: () => true
       });
 
-      let html = response.data;
+      const contentType = response.headers["content-type"] || "";
+
+      // Fichier non HTML
+      if (!isProbablyHtml(contentType)) {
+        let disposition = "inline";
+        if (
+          !contentType.startsWith("image/") &&
+          !contentType.includes("pdf") &&
+          !contentType.includes("text/") &&
+          !contentType.includes("json") &&
+          !contentType.includes("javascript")
+        ) {
+          disposition = "attachment";
+        }
+        res.set("Content-Type", contentType);
+        res.set("Content-Disposition", disposition);
+        res.send(response.data);
+        return;
+      }
+
+
+      const html = response.data.toString("utf-8");
       const $ = cheerio.load(html);
+      const links = [];
 
-      // Réécriture des liens internes pour tout passer par le proxy
+      const rootUrl = getRootUrl(url);
+      const parentUrl = getParentUrl(url);
+      const urlObj = new URL(url);
+      const currentFolder = url.endsWith("/") ? url : url.substring(0, url.lastIndexOf("/") + 1);
+
+      // Pour éviter les doublons
+      const hrefSet = new Set();
+
+      // Lien /
+      hrefSet.add(rootUrl);
+      links.push({
+        text: "/",
+        url: `/explore?url=${encodeURIComponent(rootUrl)}`,
+        href: rootUrl,
+        isSpecial: true,
+        priority: 0
+      });
+
+      // Lien ..
+      if (parentUrl !== rootUrl && !hrefSet.has(parentUrl)) {
+        hrefSet.add(parentUrl);
+        links.push({
+          text: "..",
+          url: `/explore?url=${encodeURIComponent(parentUrl)}`,
+          href: parentUrl,
+          isSpecial: true,
+          priority: 1
+        });
+      }
+
+      // Liens trouvés dans la page
       $("a[href]").each((_, el) => {
-        const href = $(el).attr("href");
-        if (href && !href.startsWith("javascript:") && !href.startsWith("#") && !href.startsWith("mailto:")) {
+        let href = $(el).attr("href");
+        let text = $(el).text().trim() || href;
+        if (
+          href &&
+          !href.startsWith("javascript:") &&
+          !href.startsWith("mailto:") &&
+          !href.startsWith("#")
+        ) {
           try {
             const abs = new URL(href, url).href;
-            $(el).attr("href", `/proxy?url=${encodeURIComponent(abs)}`);
+            if (hrefSet.has(abs)) return; // déjà vu
+            hrefSet.add(abs);
+
+            let priority = 4; // par défaut
+
+            if (abs.startsWith(url)) {
+              priority = 2; // enfant du dossier courant
+            } else if (abs.startsWith(currentFolder)) {
+              priority = 2;
+            } else if (abs.startsWith(parentUrl)) {
+              priority = 3; // autre fichier dans le dossier parent
+            }
+
+            // Même domaine
+            if (getDomain(abs) === getDomain(url)) {
+              // Même sous-domaine (vraiment le même host)
+              if (getHost(abs) === urlObj.host) {
+                // On laisse le priority tel quel
+              } else {
+                priority = Math.max(priority, 5);
+              }
+            } else {
+              priority = 6; // Autre domaine
+            }
+
+            links.push({
+              text,
+              url: `/explore?url=${encodeURIComponent(abs)}`,
+              href: abs,
+              priority
+            });
           } catch {}
         }
       });
 
-      $("img[src]").each((_, el) => {
-        const src = $(el).attr("src");
-        if (src) {
-          try {
-            const abs = new URL(src, url).href;
-            $(el).attr("src", `/proxy-asset?url=${encodeURIComponent(abs)}`);
-          } catch {}
-        }
-      });
+      // Trie par priorité
+      links.sort((a, b) => a.priority - b.priority || a.href.localeCompare(b.href));
 
-      $("link[rel='stylesheet'][href]").each((_, el) => {
-        const href = $(el).attr("href");
-        if (href) {
-          try {
-            const abs = new URL(href, url).href;
-            $(el).attr("href", `/proxy-asset?url=${encodeURIComponent(abs)}`);
-          } catch {}
-        }
-      });
+      // Génère le HTML
+      res.send(`
+        <div style="font-family:monospace;padding:1em;">
+          <div class="listing-title"><b>Explorateur de liens :</b> ${url}</div>
+          <ul>
+            ${links.map(l =>
+              `<li${l.isSpecial ? ' style="font-weight:bold;"' : ""}>
+                <a href="${l.url}">${l.text}</a>
+                <span style="color:#888;font-size:0.8em;">(${l.href})</span>
+              </li>`).join("\n")
+            }
+          </ul>
+          <div id="navActions" style="margin-top:2em;"></div>
+        </div>
+      `);
 
-      $("script[src]").each((_, el) => {
-        const src = $(el).attr("src");
-        if (src) {
-          try {
-            const abs = new URL(src, url).href;
-            $(el).attr("src", `/proxy-asset?url=${encodeURIComponent(abs)}`);
-          } catch {}
-        }
-      });
-
-      // Conserve les bases relatives et charset
-      $("head").prepend(`<base href="${url}">`);
-
-      res.send($.html());
     } catch (e) {
-      res.status(500).send("Proxy error: " + (e.response?.status || "") + " " + e.message);
-    }
-  });
-
-  // Proxy pour assets (images, CSS, JS, etc)
-  app.get("/proxy-asset", async (req, res) => {
-    const url = req.query.url;
-    if (!url || !isValidHttpUrl(url)) return res.status(400).send("Missing or invalid url");
-    try {
-      const response = await axios.get(url, { responseType: "arraybuffer", timeout: 15000 });
-      res.set("Content-Type", response.headers["content-type"] || "application/octet-stream");
-      res.send(response.data);
-    } catch (e) {
-      res.status(500).send("Proxy asset error: " + (e.response?.status || "") + " " + e.message);
-    }
-  });
-
-  // Proxy pour Download direct
-  app.get("/proxy-download", async (req, res) => {
-    const url = req.query.url;
-    if (!url || !isValidHttpUrl(url)) return res.status(400).send("Missing or invalid url");
-    try {
-      const response = await axios.get(url, { responseType: "arraybuffer", timeout: 20000 });
-      const filename = url.split("/").pop() || "file";
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-      res.setHeader("Content-Type", response.headers["content-type"] || "application/octet-stream");
-      res.send(response.data);
-    } catch (e) {
-      res.status(500).send("Proxy download error: " + (e.response?.status || "") + " " + e.message);
+      res.status(500).send("Erreur explorer: " + (e.response?.status || "") + " " + e.message);
     }
   });
 };

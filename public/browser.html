@@ -1,24 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link id="favicon" rel="icon" href="https://cdn.glitch.global/45530d4d-975d-421e-b45c-2e0121ffa505/net.png?v=1749780054384" type="image/x-icon">
-  <title>Shadowport - Proxy Browser</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link id="favicon" rel="icon" href="https://cdn.glitch.global/45530d4d-975d-421e-b45c-2e0121ffa505/net.png?v=1749780054384" type="image/x-icon">
+    <title>Shadowport - Browser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
     html, body { overflow-x: hidden; }
-    #viewer a { color: #818cf8; text-decoration: underline; } /* indigo-400 */
-    #viewer img { max-width: 100%; border-radius: 0.5em; }
-    #viewer { min-height: 40vh; max-height: 65vh; }
-  </style>
+    #viewer a { color: #818cf8; text-decoration: underline; }
+    #viewer {
+        min-height: 40vh;
+        max-height: 65vh;
+        overflow-x: auto !important;
+        overflow-y: auto;
+        padding-bottom: 2em;
+    }
+    #viewer ul {
+        overflow-x: auto;
+        overflow-y: visible;
+        white-space: nowrap;
+        display: block;
+        width: max-content;
+        min-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    #viewer li {
+        white-space: nowrap;
+        list-style: disc inside;
+        margin-bottom: .5em;
+        display: list-item;
+        width: 100%;
+        max-width: unset;
+    }
+    #viewer li span {
+        white-space: pre;
+    }
+    #viewer .listing-title {
+        display: block;
+        white-space: nowrap;
+        font-family: inherit;
+        margin-bottom: 1em;
+        padding-bottom: .25em;
+    }
+    </style>
 </head>
 <body class="bg-black text-white font-mono min-h-screen flex items-center justify-center p-4 overflow-x-hidden">
   <div class="w-full max-w-screen-md bg-gray-900 border border-indigo-500 rounded-xl shadow-xl px-4 sm:px-6 py-6 space-y-6 box-border overflow-hidden">
-    <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400 text-center">🧭 Proxy Browser</h1>
-
+    <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400 text-center">🧭 Browser</h1>
     <div class="flex flex-col sm:flex-row gap-4 mb-2 items-center">
-      <input id="urlInput" type="text" placeholder="https://example.com"
+      <input id="urlInput" type="text" placeholder="https://example.org"
         class="flex-1 px-4 py-3 bg-indigo-900/10 text-white rounded-lg border border-indigo-500/30 focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder:text-gray-400 transition"
         autocomplete="off" />
       <button id="goBtn"
@@ -26,75 +58,141 @@
         Go
       </button>
     </div>
-
     <div id="viewer" class="bg-gray-800 p-4 rounded-md text-gray-200 overflow-y-auto border border-gray-700 min-h-[20vh] max-h-[60vh]">
-      <div class="text-center text-gray-400">Enter a URL above and click <span class="font-bold text-indigo-400">Go</span>.<br />All traffic passes through Shadowport (your IP is hidden).</div>
-    </div>
-
-    <div class="text-center pt-2">
-      <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
+      <div class="text-center text-gray-400">Enter a URL and click <span class="font-bold text-indigo-400">Go</span> to explore all links on the page (list mode, no HTML rendering).</div>
     </div>
   </div>
-  <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
-    Made with 💕 by
-    <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
-      Macxzew
-    </a>
-  </footer>
-  <script>
-    const urlInput = document.getElementById('urlInput');
-    const goBtn = document.getElementById('goBtn');
-    const viewer = document.getElementById('viewer');
+    <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
+        <div class="text-center pt-2">
+            <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
+        </div>
+        <div>
+            Made with 💕 by
+            <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
+            Macxzew
+            </a>
+        </div>
+    </footer>
 
-    async function loadProxyPage(url) {
-      viewer.innerHTML = `<div class='text-indigo-400'>⏳ Loading <span class="font-mono">${url}</span> ...</div>`;
-      try {
-        const res = await fetch(`/proxy?url=${encodeURIComponent(url)}`);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const html = await res.text();
-        viewer.innerHTML = html;
+    <script>
+        const urlInput = document.getElementById('urlInput');
+        const goBtn = document.getElementById('goBtn');
+        const viewer = document.getElementById('viewer');
+        let urlHistory = [];
 
-        // --- Intercepte tous les clics sur les liens à l'intérieur du viewer ---
-        viewer.querySelectorAll('a[href]').forEach(a => {
+        async function loadLinkList(url, isBack = false) {
+        viewer.innerHTML = `<div class='text-indigo-400'>⏳ Listing <span class="font-mono">${url}</span> ...</div>`;
+        if (!isBack && urlInput.value && urlHistory[urlHistory.length - 1] !== urlInput.value) {
+            urlHistory.push(urlInput.value);
+        }
+
+        try {
+            const res = await fetch(`/explore?url=${encodeURIComponent(url)}`);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+
+            // Gestion du preview
+            const contentType = res.headers.get("content-type") || "";
+            if (!contentType.includes("text/html")) {
+            if (
+                contentType.includes("pdf") ||
+                contentType.startsWith("image/") ||
+                contentType.startsWith("text/") ||
+                contentType.includes("json") ||
+                contentType.includes("javascript")
+            ) {
+                const blob = await res.blob();
+                const urlObj = URL.createObjectURL(blob);
+                if (contentType.startsWith("image/")) {
+                viewer.innerHTML = `<img src="${urlObj}" alt="Fichier image" style="max-width:100%;max-height:50vh;margin:auto;display:block">`;
+                } else if (contentType.includes("pdf")) {
+                viewer.innerHTML = `<iframe src="${urlObj}" style="width:100%;height:70vh;border:0;background:#222;"></iframe>`;
+                } else if (contentType.includes("json") || contentType.startsWith("text/") || contentType.includes("javascript")) {
+                const txt = await (await fetch(urlObj)).text();
+                viewer.innerHTML = `<pre style="background:#181826;border-radius:0.4em;padding:1em;overflow:auto">${txt.replace(/</g,"&lt;")}</pre>`;
+                }
+                addNavButtons(url);
+                return;
+            }
+            viewer.innerHTML = `
+                <div class="text-gray-300 text-center py-6">
+                Fichier non supporté pour un aperçu direct.<br>
+                <a class="underline text-indigo-400" href="/explore?url=${encodeURIComponent(url)}" download>Télécharger le fichier</a>
+                </div>
+            `;
+            addNavButtons(url);
+            return;
+            }
+
+            // HTML listing
+            viewer.innerHTML = await res.text();
+            viewer.querySelectorAll('a[href^="/explore?url="]').forEach(a => {
             a.addEventListener('click', function(ev) {
-                const target = a.getAttribute('href');
-                if (
-                target &&
-                !target.startsWith('javascript:') &&
-                !target.startsWith('#') &&
-                !target.startsWith('mailto:')
-                ) {
                 ev.preventDefault();
-                let nextUrl;
-                // Si le lien est déjà proxyfié ("/proxy?url="), on l'utilise
-                if (target.startsWith('/proxy?url=')) {
-                    loadProxyPage(target.split('/proxy?url=')[1]);
-                    urlInput.value = decodeURIComponent(target.split('/proxy?url=')[1]);
-                } else {
-                    // Sinon, on fait comme d'hab
-                    try { nextUrl = new URL(target, url).href; } catch { nextUrl = target; }
-                    urlInput.value = nextUrl;
-                    loadProxyPage(nextUrl);
-                }
-                }
+                const nextUrl = new URL(a.href, window.location).searchParams.get('url');
+                urlInput.value = decodeURIComponent(nextUrl);
+                loadLinkList(decodeURIComponent(nextUrl));
             });
-        });
-      } catch (e) {
-        viewer.innerHTML = `<div class="text-red-400 text-center py-6">❌ Error loading page: <span class="font-mono">${e}</span></div>`;
-      }
-    }
+            });
 
-    goBtn.onclick = () => {
-      const url = urlInput.value.trim();
-      if (!url) return;
-      loadProxyPage(url);
-    };
-    urlInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        goBtn.click();
-      }
-    });
-  </script>
+            // boutons nav
+            addNavButtons(url);
+
+        } catch (e) {
+            viewer.innerHTML = `
+            <div class="text-red-400 text-center py-6">
+                ❌ Error: <span class="font-mono">${e}</span>
+            </div>
+            `;
+            addNavButtons(url);
+        }
+        }
+
+        function addNavButtons(currentUrl) {
+        let navDiv = document.getElementById('navActions');
+        if (!navDiv) {
+            navDiv = document.createElement('div');
+            navDiv.id = "navActions";
+            navDiv.className = "flex flex-row flex-wrap justify-center gap-2 mt-6";
+            viewer.appendChild(navDiv);
+        } else {
+            navDiv.className = "flex flex-row flex-wrap justify-center gap-2 mt-6";
+            navDiv.innerHTML = "";
+        }
+
+        // Retour arrière
+        if (urlHistory.length > 0) {
+            const backBtn = document.createElement('button');
+            backBtn.id = "backBtn";
+            backBtn.className = "bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition";
+            backBtn.innerText = "← Retour arrière";
+            backBtn.onclick = () => {
+            const prevUrl = urlHistory.pop();
+            urlInput.value = prevUrl;
+            loadLinkList(prevUrl, true);
+            };
+            navDiv.appendChild(backBtn);
+        }
+
+        // Menu Home
+        const menuBtn = document.createElement('a');
+        menuBtn.href = "/browser";
+        menuBtn.className = "bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition";
+        menuBtn.style.textDecoration = "none";
+        menuBtn.innerHTML = "⌂ Menu Home";
+        navDiv.appendChild(menuBtn);
+        }
+
+        goBtn.onclick = () => {
+        const url = urlInput.value.trim();
+        if (!url) return;
+        loadLinkList(url);
+        };
+        urlInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            goBtn.click();
+        }
+        });
+    </script>
 </body>
 </html>
