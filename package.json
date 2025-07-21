@@ -1,7 +1,7 @@
 {
   "name": "shadowport",
   "version": "1.0.0",
-  "description": "Interface de proxy SSH / FTP / SFTP / Telnet",
+  "description": "a multi-protocol remote administration panel",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

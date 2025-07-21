@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link id="favicon" rel="icon" href="https://cdn.glitch.global/45530d4d-975d-421e-b45c-2e0121ffa505/net.png?v=1749780054384" type="image/x-icon">
+  <title>Shadowport - Proxy Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { overflow-x: hidden; }
+    #viewer a { color: #818cf8; text-decoration: underline; } /* indigo-400 */
+    #viewer img { max-width: 100%; border-radius: 0.5em; }
+    #viewer { min-height: 40vh; max-height: 65vh; }
+  </style>
+</head>
+<body class="bg-black text-white font-mono min-h-screen flex items-center justify-center p-4 overflow-x-hidden">
+  <div class="w-full max-w-screen-md bg-gray-900 border border-indigo-500 rounded-xl shadow-xl px-4 sm:px-6 py-6 space-y-6 box-border overflow-hidden">
+    <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400 text-center">🧭 Proxy Browser</h1>
+
+    <div class="flex flex-col sm:flex-row gap-4 mb-2 items-center">
+      <input id="urlInput" type="text" placeholder="https://example.com"
+        class="flex-1 px-4 py-3 bg-indigo-900/10 text-white rounded-lg border border-indigo-500/30 focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder:text-gray-400 transition"
+        autocomplete="off" />
+      <button id="goBtn"
+        class="bg-indigo-500 hover:bg-indigo-400 px-6 py-2 rounded-md transition text-white font-bold">
+        Go
+      </button>
+    </div>
+
+    <div id="viewer" class="bg-gray-800 p-4 rounded-md text-gray-200 overflow-y-auto border border-gray-700 min-h-[20vh] max-h-[60vh]">
+      <div class="text-center text-gray-400">Enter a URL above and click <span class="font-bold text-indigo-400">Go</span>.<br />All traffic passes through Shadowport (your IP is hidden).</div>
+    </div>
+
+    <div class="text-center pt-2">
+      <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
+    </div>
+  </div>
+  <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
+    Made with 💕 by
+    <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
+      Macxzew
+    </a>
+  </footer>
+  <script>
+    const urlInput = document.getElementById('urlInput');
+    const goBtn = document.getElementById('goBtn');
+    const viewer = document.getElementById('viewer');
+
+    async function loadProxyPage(url) {
+      viewer.innerHTML = `<div class='text-indigo-400'>⏳ Loading <span class="font-mono">${url}</span> ...</div>`;
+      try {
+        const res = await fetch(`/proxy?url=${encodeURIComponent(url)}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const html = await res.text();
+        viewer.innerHTML = html;
+
+        // Intercept all link clicks to re-proxy
+        viewer.querySelectorAll('a[href]').forEach(a => {
+          a.addEventListener('click', ev => {
+            const target = a.getAttribute('href');
+            if (target && !target.startsWith('javascript:') && !target.startsWith('#')) {
+              ev.preventDefault();
+              let nextUrl;
+              try { nextUrl = new URL(target, url).href; } catch { nextUrl = target; }
+              urlInput.value = nextUrl;
+              loadProxyPage(nextUrl);
+            }
+          });
+        });
+      } catch (e) {
+        viewer.innerHTML = `<div class="text-red-400 text-center py-6">❌ Error loading page: <span class="font-mono">${e}</span></div>`;
+      }
+    }
+
+    goBtn.onclick = () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      loadProxyPage(url);
+    };
+    urlInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        goBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>

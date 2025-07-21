@@ -37,3 +37,4 @@ require("./routes/sftp")(app, SFTPClient, path, Readable, upload);
 require("./routes/ssh")(wss, Client);
 require("./routes/telnet")(wss, net);
 require("./routes/webcheck")(app);
+require("./routes/browser")(app);
