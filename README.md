@@ -6,8 +6,7 @@
   </a>
 </p>
 
-> **Shadowport** is a multi-protocol remote administration panel (SSH, FTP, SFTP, Telnet, WebCheck) developed in **Node.js**.  
-> It allows system administrators to interact with remote machines and scan websites through a sleek, real-time web interface.
+> **Shadowport** is a multi-protocol remote administration panel (SSH, FTP, SFTP, Telnet, WebCheck) developed in **Node.js**. It allows system administrators to interact with remote machines and scan websites through a sleek, real-time web interface.
 
 <img alt="Shadowport UI" src="https://raw.githubusercontent.com/Macxzew/shadowport/main/assets/ui.png" width="1000"/>
 
