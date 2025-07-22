@@ -134,10 +134,11 @@ module.exports = function(app) {
         let href = $(el).attr("href");
         let text = $(el).text().trim() || href;
         if (
-          href &&
-          !href.startsWith("javascript:") &&
-          !href.startsWith("mailto:") &&
-          !href.startsWith("#")
+            href &&
+            !href.startsWith("javascript:") &&
+            !href.startsWith("mailto:") &&
+            !href.startsWith("#") &&
+            !/\?C=|;O=|;C=|;N=/.test(href)
         ) {
           try {
             const abs = new URL(href, url).href;
