@@ -70,12 +70,12 @@ module.exports = function(app) {
 
       const contentType = response.headers["content-type"] || "";
 
-      // Fichier non HTML (preview ou download direct selon ton besoin)
+      // Fichier non HTML
       if (!isProbablyHtml(contentType)) {
-        // --- Gestion du nom de fichier ---
+        // Gestion du nom de fichier
         const fileUrl = new URL(url);
         let filename = fileUrl.pathname.split('/').pop() || "file";
-        // Ajoute une extension par défaut si absente (évite .html .jpg etc déjà présents)
+        // Ajoute une extension par défaut si pas là
         if (!/\.[a-z0-9]{2,5}$/i.test(filename)) filename += ".bin";
 
         let disposition = "inline";
@@ -129,7 +129,7 @@ module.exports = function(app) {
         });
       }
 
-      // Liens trouvés dans la page (et surtout PAS le lien courant)
+      // Liens trouvés dans la page
       $("a[href]").each((_, el) => {
         let href = $(el).attr("href");
         let text = $(el).text().trim() || href;
@@ -142,7 +142,7 @@ module.exports = function(app) {
         ) {
           try {
             const abs = new URL(href, url).href;
-            if (abs === url) return;          // <-- N'affiche pas le lien où on est déjà
+            if (abs === url) return;          // affiche pas le lien où on est déjà
             if (hrefSet.has(abs)) return;     // déjà vu
             hrefSet.add(abs);
 

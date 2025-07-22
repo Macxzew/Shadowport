@@ -240,7 +240,7 @@
             const dl = document.getElementById('downloadLink');
             if(dl) {
                 dl.addEventListener('click', showDownloadNotif);
-                // Démarre le download direct après 500ms si présent (sans focus user)
+                // Démarre le download direct après 500ms
                 setTimeout(() => {
                     dl.click();
                 }, 500);
