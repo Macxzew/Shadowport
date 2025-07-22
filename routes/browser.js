@@ -37,16 +37,15 @@ function getParentUrl(currentUrl) {
   }
 }
 
-// Pour comparer domaines et sous-domaines
 function getDomain(urlStr) {
   try {
     const u = new URL(urlStr);
-    // Retourne le domaine racine
     return u.hostname.split('.').slice(-2).join('.');
   } catch {
     return "";
   }
 }
+
 function getHost(urlStr) {
   try {
     return new URL(urlStr).host;
@@ -71,8 +70,14 @@ module.exports = function(app) {
 
       const contentType = response.headers["content-type"] || "";
 
-      // Fichier non HTML
+      // Fichier non HTML (preview ou download direct selon ton besoin)
       if (!isProbablyHtml(contentType)) {
+        // --- Gestion du nom de fichier ---
+        const fileUrl = new URL(url);
+        let filename = fileUrl.pathname.split('/').pop() || "file";
+        // Ajoute une extension par défaut si absente (évite .html .jpg etc déjà présents)
+        if (!/\.[a-z0-9]{2,5}$/i.test(filename)) filename += ".bin";
+
         let disposition = "inline";
         if (
           !contentType.startsWith("image/") &&
@@ -84,12 +89,12 @@ module.exports = function(app) {
           disposition = "attachment";
         }
         res.set("Content-Type", contentType);
-        res.set("Content-Disposition", disposition);
+        res.set("Content-Disposition", `${disposition}; filename="${filename}"`);
         res.send(response.data);
         return;
       }
 
-
+      // HTML (listing liens)
       const html = response.data.toString("utf-8");
       const $ = cheerio.load(html);
       const links = [];
@@ -124,7 +129,7 @@ module.exports = function(app) {
         });
       }
 
-      // Liens trouvés dans la page
+      // Liens trouvés dans la page (et surtout PAS le lien courant)
       $("a[href]").each((_, el) => {
         let href = $(el).attr("href");
         let text = $(el).text().trim() || href;
@@ -136,7 +141,8 @@ module.exports = function(app) {
         ) {
           try {
             const abs = new URL(href, url).href;
-            if (hrefSet.has(abs)) return; // déjà vu
+            if (abs === url) return;          // <-- N'affiche pas le lien où on est déjà
+            if (hrefSet.has(abs)) return;     // déjà vu
             hrefSet.add(abs);
 
             let priority = 4; // par défaut
@@ -151,7 +157,6 @@ module.exports = function(app) {
 
             // Même domaine
             if (getDomain(abs) === getDomain(url)) {
-              // Même sous-domaine (vraiment le même host)
               if (getHost(abs) === urlObj.host) {
                 // On laisse le priority tel quel
               } else {
