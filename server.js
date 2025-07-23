@@ -19,10 +19,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 const startPort = 8000;
 const app = express();
 
-// LANCEMENT DES PROXYS DIRECTEMENT
-require("./proxies/socks");
-require("./proxies/http");
-require("./proxies/ws");
+// LANCEMENT DES PROXYS
+require('./proxies/http')(app);
 
 app.use(express.static("public"));
 app.use(express.json());
@@ -34,24 +32,12 @@ const ALLOWED_IPS = (process.env.ALLOWED_IPS || '').split(',').map(ip => ip.trim
 app.use(ipFilterMiddleware(ALLOWED_IPS));
 
 // ROUTES HTML
-app.get("/webcheck", (req, res) =>
-  res.sendFile(path.join(__dirname, "public/webcheck.html"))
-);
-app.get("/browser", (req, res) =>
-  res.sendFile(path.join(__dirname, "public/browser.html"))
-);
-app.get("/telnet", (req, res) =>
-  res.sendFile(path.join(__dirname, "public/telnet.html"))
-);
-app.get("/sftp", (req, res) =>
-  res.sendFile(path.join(__dirname, "public/sftp.html"))
-);
-app.get("/ssh", (req, res) =>
-  res.sendFile(path.join(__dirname, "public/ssh.html"))
-);
-app.get("/ftp", (req, res) =>
-  res.sendFile(path.join(__dirname, "public/ftp.html"))
-);
+app.get("/webcheck", (req, res) =>res.sendFile(path.join(__dirname, "public/webcheck.html")));
+app.get("/browser", (req, res) =>res.sendFile(path.join(__dirname, "public/browser.html")));
+app.get("/telnet", (req, res) =>res.sendFile(path.join(__dirname, "public/telnet.html")));
+app.get("/sftp", (req, res) =>res.sendFile(path.join(__dirname, "public/sftp.html")));
+app.get("/ssh", (req, res) =>res.sendFile(path.join(__dirname, "public/ssh.html")));
+app.get("/ftp", (req, res) =>res.sendFile(path.join(__dirname, "public/ftp.html")));
 
 // ROUTES API
 require("./routes/sftp")(app, SFTPClient, path, Readable, upload);
