@@ -14,21 +14,36 @@ if (!ALLOWED_IPS.length) {
 }
 
 const server = socks.createServer((info, accept, deny) => {
-	let clientIp = info.srcAddr || ''
-	if (clientIp.startsWith('::ffff:')) clientIp = clientIp.slice(7)
-	if (clientIp === '::1') clientIp = '127.0.0.1'
+  let clientIp = info.srcAddr || ''
+  if (clientIp.startsWith('::ffff:')) clientIp = clientIp.slice(7)
+  if (clientIp === '::1') clientIp = '127.0.0.1'
 
-	if (!isAllowed(clientIp, ALLOWED_IPS)) {
-		console.warn(`[REFUS IP] ${clientIp} bloquée (SOCKS)`)
-		return deny()
-	}
-	accept()
+  if (!isAllowed(clientIp, ALLOWED_IPS)) {
+    console.warn(`[REFUS IP] ${clientIp} bloquée (SOCKS)`)
+    return deny()
+  }
+  accept()
+})
+
+// Gestion d’erreur explicite sur les requêtes non SOCKS
+server.on('error', (err) => {
+  // Filtre le message 'Incompatible SOCKS protocol version'
+  if (
+    err &&
+    err.message &&
+    err.message.startsWith('Incompatible SOCKS protocol version')
+  ) {
+    console.warn(`[SOCKS] Requête non SOCKS détectée (souvent un client HTTP sur port SOCKS):`, err.message)
+    return // Ne fait rien d’autre, c’est informatif
+  }
+  // Log toutes les autres erreurs pour debug
+  console.error('[SOCKS ERROR]', err)
 })
 
 server.useAuth(socks.auth.UserPassword((user, pass, cb) => {
-	cb(user === SOCKS_USER && pass === SOCKS_PASS)
+  cb(user === SOCKS_USER && pass === SOCKS_PASS)
 }))
 
 server.listen(SOCKS_PORT, '0.0.0.0', () => {
-	console.log(`SOCKS4/5 proxy running on port ${SOCKS_PORT}`)
+  console.log(`SOCKS4/5 proxy running on port ${SOCKS_PORT}`)
 })
