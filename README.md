@@ -21,7 +21,6 @@
 - 🌐 WebCheck (scan and analyze website metadata, headers, DNS, SSL, security & SEO)
 - 📊 Real-time scan cards with expandable content
 - ⚡ Lightweight and responsive interface
-- 🛡️ Multiple integrated proxies: HTTP, HTTPS, WSS, and SOCKS4/5
 - 🎨 Built with TailwindCSS
 
 ---
