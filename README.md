@@ -14,13 +14,14 @@
 
 ## ⚙️ Features
 
-- 🔐 **SSH** live terminal (via WebSocket)
-- 📡 **Telnet** live terminal (TCP relay)
-- 📂 **SFTP & FTP** file management (upload, download, delete, recursive delete, folder navigation)
-- 🕸️ **Web file browser** (explore, preview & download remote HTTP/HTTPS files and folders)
-- 🌐 **WebCheck** (scan and analyze website metadata, headers, DNS, SSL, security & SEO)
+- 🔐 SSH live terminal (via WebSocket)
+- 📡 Telnet live terminal (TCP relay)
+- 📂 SFTP & FTP file management (upload, download, delete, recursive delete, folder navigation)
+- 🕸️ Web file browser (explore, preview & download remote HTTP/HTTPS files and folders)
+- 🌐 WebCheck (scan and analyze website metadata, headers, DNS, SSL, security & SEO)
 - 📊 Real-time scan cards with expandable content
 - ⚡ Lightweight and responsive interface
+- 🛡️ Multiple integrated proxies: HTTP, HTTPS, WSS, and SOCKS4/5
 - 🎨 Built with TailwindCSS
 
 ---
@@ -32,5 +33,7 @@ Clone the project and run:
 ```bash
 git clone https://github.com/Macxzew/shadowport.git
 cd shadowport
+openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj "/CN=localhost"
 npm install
 node server.js
+```

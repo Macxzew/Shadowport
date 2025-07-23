@@ -12,6 +12,16 @@ module.exports = (app, SFTPClient, path, Readable, upload) => {
     await sftp.rmdir(targetPath);
   }
 
+  async function safeEnd(sftp) {
+    try {
+      if (sftp && sftp.sftp) {
+        await sftp.end();
+      }
+    } catch {
+      // ignore errors during close
+    }
+  }
+
   app.post("/api/sftp/list", async (req, res) => {
     const { host, port, username, password, path: dirPath } = req.body;
     const sftp = new SFTPClient();
@@ -27,7 +37,7 @@ module.exports = (app, SFTPClient, path, Readable, upload) => {
     } catch (err) {
       res.status(500).json({ ok: false, error: err.message });
     } finally {
-      sftp.end();
+      await safeEnd(sftp);
     }
   });
 
@@ -40,12 +50,12 @@ module.exports = (app, SFTPClient, path, Readable, upload) => {
       await sftp.connect({ host, port: parseInt(port), username: user, password: pass });
       await sftp.fastGet(remotePath, tempPath);
       res.download(tempPath, path.basename(remotePath), () => {
-        require("fs").unlink(tempPath, () => {});
+        fs.unlink(tempPath, () => {});
       });
     } catch (err) {
       res.status(500).send("Erreur de téléchargement: " + err.message);
     } finally {
-      sftp.end();
+      await safeEnd(sftp);
     }
   });
 
@@ -69,7 +79,7 @@ module.exports = (app, SFTPClient, path, Readable, upload) => {
     } catch (err) {
       res.status(500).json({ ok: false, error: err.message });
     } finally {
-      sftp.end();
+      await safeEnd(sftp);
     }
   });
 
@@ -91,7 +101,7 @@ module.exports = (app, SFTPClient, path, Readable, upload) => {
       console.error("Erreur d'upload SFTP:", err);
       res.status(500).json({ ok: false, error: err.message });
     } finally {
-      sftp.end();
+      await safeEnd(sftp);
     }
   });
 };
