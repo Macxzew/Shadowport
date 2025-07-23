@@ -7,87 +7,107 @@
     <title>Shadowport - Browser</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-    html, body { overflow-x: hidden; }
-    #viewer a { color: #818cf8; text-decoration: underline; }
-    #viewer {
-        min-height: 40vh;
-        max-height: 65vh;
-        overflow-x: auto !important;
-        overflow-y: auto;
-        padding-bottom: 2em;
-    }
-    #viewer ul {
-        overflow-x: auto;
-        overflow-y: visible;
-        white-space: nowrap;
-        display: block;
-        width: max-content;
-        min-width: 100%;
-        padding: 0;
-        margin: 0;
-    }
-    #viewer li {
-        white-space: nowrap;
-        list-style: disc inside;
-        margin-bottom: .5em;
-        display: list-item;
-        width: 100%;
-        max-width: unset;
-    }
-    #viewer li span {
-        white-space: pre;
-    }
-    #viewer .listing-title {
-        display: block;
-        white-space: nowrap;
-        font-family: inherit;
-        margin-bottom: 1em;
-        padding-bottom: .25em;
-    }
-    #notifDownload {
-        position: fixed;
-        bottom: 2em;
-        right: 2em;
-        z-index: 9999;
-        min-width: 220px;
-        pointer-events: none;
-        display: none;
-    }
+        html, body { overflow-x: hidden; }
+        #viewer a { color: #818cf8; text-decoration: underline; }
+        #viewer {
+            min-height: 40vh;
+            max-height: 65vh;
+            overflow-x: auto !important;
+            overflow-y: auto;
+            padding-bottom: 2em;
+            scrollbar-width: thin;
+            scrollbar-color: #3730a3 #22223b;
+        }
+        #viewer ul {
+            overflow-x: auto;
+            overflow-y: visible;
+            white-space: nowrap;
+            display: block;
+            width: max-content;
+            min-width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        #viewer li {
+            white-space: nowrap;
+            list-style: disc inside;
+            margin-bottom: .5em;
+            display: list-item;
+            width: 100%;
+            max-width: unset;
+        }
+        #viewer li span {
+            white-space: pre;
+        }
+        #viewer .listing-title {
+            display: block;
+            white-space: nowrap;
+            font-family: inherit;
+            margin-bottom: 1em;
+            padding-bottom: .25em;
+        }
+        #notifDownload {
+            position: fixed;
+            bottom: 2em;
+            right: 2em;
+            z-index: 9999;
+            min-width: 220px;
+            pointer-events: none;
+            display: none;
+        }
+        #viewer::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+            background: transparent;
+        }
+        #viewer::-webkit-scrollbar-thumb {
+            background: #3730a3;
+            border-radius: 8px;
+            border: 2px solid #22223b;
+        }
+        #viewer::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
     </style>
 </head>
 <body class="bg-black text-white font-mono min-h-screen flex items-center justify-center p-4 overflow-x-hidden">
-  <div class="w-full max-w-screen-md bg-gray-900 border border-indigo-500 rounded-xl shadow-xl px-4 sm:px-6 py-6 space-y-6 box-border overflow-hidden">
-    <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400 text-center">🧭 Browser</h1>
-    <div class="flex flex-col sm:flex-row gap-4 mb-2 items-center">
-      <input id="urlInput" type="text" placeholder="https://example.org"
-        class="flex-1 px-4 py-3 bg-indigo-900/10 text-white rounded-lg border border-indigo-500/30 focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder:text-gray-400 transition"
-        autocomplete="off" />
-      <button id="goBtn"
-        class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-md transition">
-        Go
-      </button>
+    <div class="w-full max-w-screen-md bg-gray-900 border border-indigo-500 rounded-xl shadow-xl px-4 sm:px-6 py-6 space-y-6 box-border overflow-hidden">
+        <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400 text-center">🧭 Browser</h1>
+        <div class="flex flex-col sm:flex-row gap-4 mb-2 items-center">
+            <input id="urlInput" type="text"
+                placeholder="https://example.org"
+                class="flex-1 px-4 py-3 bg-indigo-900/10 text-white rounded-lg border border-indigo-500/30 focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder:text-gray-400 transition"
+                autocomplete="off" />
+            <button id="goBtn"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-md transition">
+                Go
+            </button>
+        </div>
+        <div id="viewer"
+            class="bg-gray-800 p-4 rounded-md text-gray-200 overflow-y-auto border border-gray-700 min-h-[20vh] max-h-[60vh]">
+            <div class="text-center text-gray-400">
+                Entre une URL et clique <span class="font-bold text-indigo-400">Go</span> pour explorer les liens (listing sans rendu HTML).
+            </div>
+        </div>
     </div>
-    <div id="viewer" class="bg-gray-800 p-4 rounded-md text-gray-200 overflow-y-auto border border-gray-700 min-h-[20vh] max-h-[60vh]">
-      <div class="text-center text-gray-400">Enter a URL and click <span class="font-bold text-indigo-400">Go</span> to explore all links on the page (list mode, no HTML rendering).</div>
+    <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
+        <div class="text-center pt-2">
+            <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Retour menu</a>
+        </div>
+        <div>
+            Made with 💕 by
+            <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer"
+                class="text-white font-semibold hover:underline">Macxzew</a>
+        </div>
+    </footer>
+    <div id="notifDownload"
+        class="bg-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg flex flex-row items-center gap-3">
+        <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4" opacity="0.2" />
+            <path d="M4 12a8 8 0 018-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+        </svg>
+        <span>Téléchargement…</span>
     </div>
-  </div>
-  <footer class="absolute bottom-2 text-xs text-gray-500 text-center w-full">
-    <div class="text-center pt-2">
-      <a href="/" class="text-sm text-gray-400 hover:text-white transition">← Back to menu</a>
-    </div>
-    <div>
-      Made with 💕 by
-      <a href="https://github.com/Macxzew" target="_blank" rel="noopener noreferrer" class="text-white font-semibold hover:underline">
-      Macxzew
-      </a>
-    </div>
-  </footer>
-
-  <div id="notifDownload" class="bg-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg flex flex-row items-center gap-3">
-      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4" opacity="0.2"/><path d="M4 12a8 8 0 018-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-      <span>Downloading file...</span>
-  </div>
-
     <script>
     const urlInput = document.getElementById('urlInput');
     const goBtn = document.getElementById('goBtn');
@@ -108,197 +128,80 @@
         }, 15000);
     }
 
-    // Spinner animé pendant le listing
     function renderLoading(url) {
-    viewer.innerHTML = `
-        <div class="flex flex-row gap-3 items-center justify-center text-indigo-400 py-12 text-lg">
-        <svg class="animate-spin h-7 w-7 text-indigo-400" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4" opacity="0.2"/><path d="M4 12a8 8 0 018-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-        <span>Listing <span class="font-mono">${url}</span> ...</span>
-        </div>
-    `;
+        viewer.innerHTML = `
+            <div class="flex flex-row gap-3 items-center justify-center text-indigo-400 py-12 text-lg">
+                <svg class="animate-spin h-7 w-7 text-indigo-400" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4" opacity="0.2"/>
+                    <path d="M4 12a8 8 0 018-8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <span>Listing <span class="font-mono">${url}</span> ...</span>
+            </div>
+        `;
     }
 
     async function loadLinkList(url, isBack = false) {
-    renderLoading(url);
-    if (!isBack && urlInput.value && urlHistory[urlHistory.length - 1] !== urlInput.value) {
-        urlHistory.push(urlInput.value);
-    }
+        renderLoading(url);
+        if (!isBack && urlInput.value && urlHistory[urlHistory.length - 1] !== urlInput.value) {
+            urlHistory.push(urlInput.value);
+        }
 
-    let didTimeout = false;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-        didTimeout = true;
-        controller.abort();
-    }, 13000);
+        let didTimeout = false;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+            didTimeout = true;
+            controller.abort();
+        }, 15000);
 
-    try {
-        const res = await fetch(`/explore?url=${encodeURIComponent(url)}`, { signal: controller.signal });
-        clearTimeout(timeout);
+        try {
+            const res = await fetch(`/browse?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+            clearTimeout(timeout);
+            const html = await res.text();
+            viewer.innerHTML = html;
 
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+            viewer.querySelectorAll('a[href^="/browse?url="]').forEach(a => {
+                a.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    const nextUrl = new URL(a.href, window.location).searchParams.get('url');
+                    urlInput.value = decodeURIComponent(nextUrl);
+                    loadLinkList(decodeURIComponent(nextUrl));
+                });
+            });
 
-        // Preview non-HTML
-        const contentType = res.headers.get("content-type") || "";
-        if (!contentType.includes("text/html")) {
-        const blob = await res.blob();
-        const urlObj = URL.createObjectURL(blob);
+            viewer.querySelectorAll('a[href="/browser"]').forEach(a => {
+                a.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    urlInput.value = "";
+                    viewer.innerHTML = `<div class="text-center text-gray-400">Entre une URL et clique <span class="font-bold text-indigo-400">Go</span> pour explorer les liens (listing sans rendu HTML).</div>`;
+                });
+            });
 
-        const downloadBtnHtml = `
-            <div class="flex justify-center mt-3">
-                <a class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition flex items-center gap-2"
-                    id="downloadLink"
-                    href="/explore?url=${encodeURIComponent(url)}"
-                    download
-                    target="_blank"
-                    style="text-decoration:none;">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l4-4m-4 4l-4-4m12 4v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2" />
-                    </svg>
-                    Download file
-                </a>
-            </div>
-        `;
+            setTimeout(() => {
+                viewer.querySelectorAll('#downloadLink').forEach(dl => {
+                    dl.addEventListener('click', showDownloadNotif);
+                });
+            }, 30);
 
-        if (contentType.startsWith("image/")) {
-            viewer.innerHTML = `<img src="${urlObj}" alt="Fichier image" style="max-width:100%;max-height:50vh;margin:auto;display:block">${downloadBtnHtml}`;
-        } else if (contentType.includes("pdf")) {
-            viewer.innerHTML = `<iframe src="${urlObj}" style="width:100%;height:70vh;border:0;background:#222;"></iframe>${downloadBtnHtml}`;
-        } else if (contentType.includes("json") || contentType.startsWith("text/") || contentType.includes("javascript")) {
-            const txt = await (await fetch(urlObj)).text();
-            viewer.innerHTML = `<pre style="background:#181826;border-radius:0.4em;padding:1em;overflow:auto">${txt.replace(/</g,"&lt;")}</pre>${downloadBtnHtml}`;
-        } else {
+        } catch (e) {
+            clearTimeout(timeout);
             viewer.innerHTML = `
-            <div class="text-gray-300 text-center py-6">
-                Fichier non supporté pour un aperçu direct.<br>
-                <a class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition flex items-center gap-2 mt-3"
-                id="downloadLink"
-                href="/explore?url=${encodeURIComponent(url)}"
-                download target="_blank"
-                style="text-decoration:none">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l4-4m-4 4l-4-4m12 4v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2" />
-                </svg>
-                Download file
-                </a>
-            </div>
+                <div class="text-red-400 text-center py-6">
+                    ❌ Error: <span class="font-mono">${e}</span>
+                </div>
             `;
         }
-
-        addNavButtons(url);
-
-        setTimeout(() => {
-            const dl = document.getElementById('downloadLink');
-            if(dl) dl.addEventListener('click', showDownloadNotif);
-        }, 30);
-
-        return;
-        }
-
-        // HTML listing
-        viewer.innerHTML = await res.text();
-        viewer.querySelectorAll('a[href^="/explore?url="]').forEach(a => {
-        a.addEventListener('click', function(ev) {
-            ev.preventDefault();
-            const nextUrl = new URL(a.href, window.location).searchParams.get('url');
-            urlInput.value = decodeURIComponent(nextUrl);
-            loadLinkList(decodeURIComponent(nextUrl));
-        });
-        });
-
-        addNavButtons(url);
-
-    } catch (e) {
-        clearTimeout(timeout);
-
-        if (didTimeout) {
-        // Affiche le fallback download + boutons nav
-        viewer.innerHTML = `
-            <div class="text-gray-300 text-center py-6">
-            <div class="mb-3 text-lg text-yellow-400 font-bold flex flex-row justify-center gap-2 items-center">
-                <svg class="h-6 w-6 animate-bounce" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 19a7 7 0 100-14 7 7 0 000 14z" />
-                </svg>
-                Listing too long / not supported. File is not directly listable.
-            </div>
-            <a class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition flex items-center gap-2 mt-2"
-                id="downloadLink"
-                href="/explore?url=${encodeURIComponent(url)}"
-                download target="_blank"
-                style="text-decoration:none">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l4-4m-4 4l-4-4m12 4v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2" />
-                </svg>
-                Download file
-            </a>
-            <div class="flex flex-row gap-2 justify-center mt-5">
-                <button onclick="history.back()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition">← Retour arrière</button>
-                <a href="/browser" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition" style="text-decoration:none;">⌂ Menu Home</a>
-            </div>
-            </div>
-        `;
-        setTimeout(() => {
-            const dl = document.getElementById('downloadLink');
-            if(dl) {
-                dl.addEventListener('click', showDownloadNotif);
-                // Démarre le download direct après 500ms
-                setTimeout(() => {
-                    dl.click();
-                }, 500);
-            }
-        }, 30);
-
-        } else {
-        viewer.innerHTML = `
-            <div class="text-red-400 text-center py-6">
-            ❌ Error: <span class="font-mono">${e}</span>
-            </div>
-        `;
-        addNavButtons(url);
-        }
-    }
-    }
-
-    function addNavButtons(currentUrl) {
-    let navDiv = document.getElementById('navActions');
-    if (!navDiv) {
-        navDiv = document.createElement('div');
-        navDiv.id = "navActions";
-        navDiv.className = "flex flex-row flex-wrap justify-center gap-2 mt-6";
-        viewer.appendChild(navDiv);
-    } else {
-        navDiv.className = "flex flex-row flex-wrap justify-center gap-2 mt-6";
-        navDiv.innerHTML = "";
-    }
-    if (urlHistory.length > 0) {
-        const backBtn = document.createElement('button');
-        backBtn.id = "backBtn";
-        backBtn.className = "bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition";
-        backBtn.innerText = "← Go Back";
-        backBtn.onclick = () => {
-        const prevUrl = urlHistory.pop();
-        urlInput.value = prevUrl;
-        loadLinkList(prevUrl, true);
-        };
-        navDiv.appendChild(backBtn);
-    }
-    const menuBtn = document.createElement('a');
-    menuBtn.href = "/browser";
-    menuBtn.className = "bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded transition";
-    menuBtn.style.textDecoration = "none";
-    menuBtn.innerHTML = "⌂ Home";
-    navDiv.appendChild(menuBtn);
     }
 
     goBtn.onclick = () => {
-    const url = urlInput.value.trim();
-    if (!url) return;
-    loadLinkList(url);
+        const url = urlInput.value.trim();
+        if (!url) return;
+        loadLinkList(url);
     };
     urlInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        goBtn.click();
-    }
+        if (e.key === "Enter") {
+            e.preventDefault();
+            goBtn.click();
+        }
     });
     </script>
 </body>
