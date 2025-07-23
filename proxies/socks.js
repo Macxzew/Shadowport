@@ -1,3 +1,15 @@
+process.on('uncaughtException', (err) => {
+  if (
+    err &&
+    err.message &&
+    err.message.startsWith('Incompatible SOCKS protocol version')
+  ) {
+    console.warn('[SOCKS] Client HTTP ou protocole inconnu détecté sur port SOCKS');
+    return;
+  }
+  console.error('Uncaught:', err);
+});
+
 const socks = require('socksv5')
 const { isAllowed } = require('../utils/ipfilter')
 
@@ -25,18 +37,16 @@ const server = socks.createServer((info, accept, deny) => {
   accept()
 })
 
-// Gestion d’erreur explicite sur les requêtes non SOCKS
+// Log les autres erreurs pour debug (hors protocole SOCKS invalide)
 server.on('error', (err) => {
-  // Filtre le message 'Incompatible SOCKS protocol version'
   if (
     err &&
     err.message &&
     err.message.startsWith('Incompatible SOCKS protocol version')
   ) {
-    console.warn(`[SOCKS] Requête non SOCKS détectée (souvent un client HTTP sur port SOCKS):`, err.message)
-    return // Ne fait rien d’autre, c’est informatif
+    // Rien à faire ici, c'est déjà géré globalement
+    return;
   }
-  // Log toutes les autres erreurs pour debug
   console.error('[SOCKS ERROR]', err)
 })
 
