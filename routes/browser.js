@@ -150,7 +150,7 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                 }
             }
 
-            // Vérifie si le lien appartient à un autre domaine, puis le déplace vers "Other domains"
+            // Vérifie si le lien appartient à un autre domaine
             if (u.hostname !== originDomain) {
                 otherDomains.push({
                     url: `/browse?url=${encodeURIComponent(u.href)}`,
