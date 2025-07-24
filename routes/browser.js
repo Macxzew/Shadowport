@@ -108,6 +108,10 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
     const files = [];
     const folders = new Map();
     const subfolderFiles = [];
+    const otherDomains = [];
+
+    const originDomain = new URL(origin).hostname;
+
     for (const l of allLinks) {
         try {
             const u = new URL(l.href);
@@ -134,17 +138,28 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                     subfolderFiles.push(l);
                 }
             }
+
+            // Vérifie si le lien appartient à un autre domaine
+            if (u.hostname !== originDomain) {
+                otherDomains.push({
+                    url: `/browse?url=${encodeURIComponent(u.href)}`,
+                    href: u.href,
+                    display: `🌐 ${u.hostname}`
+                });
+            }
+
         } catch {}
     }
+
     return {
         files: uniqueBy(files, "href"),
         folders: Array.from(folders.values()),
-        subfolderFiles: uniqueBy(subfolderFiles, "href")
+        subfolderFiles: uniqueBy(subfolderFiles, "href"),
+        otherDomains: uniqueBy(otherDomains, "href")  // Retourne les liens externes
     };
 }
 
-
-function renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles) {
+function renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles, otherDomains) {
     return `
         <div style="margin-bottom:1.2em;">
             <div style="font-weight:bold;color:#818cf8;margin-bottom:0.3em;">Current folder</div>
@@ -175,6 +190,17 @@ function renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles) {
             <div style="font-weight:bold;color:#f59e42;margin:1em 0 0.4em 0;">Other folders/files</div>
             <ul>
                 ${subfolderFiles.map(l => `
+                    <li>
+                        <a href="${l.url}">${l.display ? l.display : getLabel(l.href)}</a>
+                        <span style="color:#888;font-size:0.8em;">(${l.href})</span>
+                    </li>
+                `).join("")}
+            </ul>
+            ` : ""}
+            ${otherDomains.length > 0 ? `
+            <div style="font-weight:bold;color:#f59e42;margin:1em 0 0.4em 0;">Other domains</div>
+            <ul>
+                ${otherDomains.map(l => `
                     <li>
                         <a href="${l.url}">${l.display ? l.display : getLabel(l.href)}</a>
                         <span style="color:#888;font-size:0.8em;">(${l.href})</span>
