@@ -148,7 +148,9 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                 });
             }
 
-        } catch {}
+        } catch (e) {
+            console.error("Erreur de traitement du lien:", e);
+        }
     }
 
     return {
@@ -159,7 +161,7 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
     };
 }
 
-function renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles, otherDomains) {
+function renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles, otherDomains = []) {
     return `
         <div style="margin-bottom:1.2em;">
             <div style="font-weight:bold;color:#818cf8;margin-bottom:0.3em;">Current folder</div>
