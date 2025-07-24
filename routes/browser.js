@@ -110,7 +110,7 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
     const subfolderFiles = [];
     const otherDomains = [];
 
-    const originDomain = new URL(origin).hostname;
+    const originDomain = new URL(origin).hostname;  // Récupère le domaine d'origine
 
     for (const l of allLinks) {
         try {
