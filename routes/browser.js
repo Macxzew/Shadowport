@@ -1,23 +1,27 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
+
 const BIN_TYPES = [
-    "application/zip","application/x-7z-compressed","application/x-rar-compressed",
-    "application/x-tar","application/gzip","application/x-bzip2","application/octet-stream",
-    "application/x-iso9660-image","application/x-msdownload",
-    "application/x-dosexec","application/vnd.android.package-archive"
+    "application/zip", "application/x-7z-compressed", "application/x-rar-compressed",
+    "application/x-tar", "application/gzip", "application/x-bzip2", "application/octet-stream",
+    "application/x-iso9660-image", "application/x-msdownload",
+    "application/x-dosexec", "application/vnd.android.package-archive"
 ];
+
 const BIN_EXTS = [
-    ".zip",".7z",".rar",".tar",".gz",".bz2",".iso",".exe",".apk",".xz",
-    ".doc",".docx",".ppt",".pptx",".xls",".xlsx",".ods",".odt",".odp",".odc",
-    ".pdf",".mp4",".avi",".mov",".mkv",".flv",".mpg",".mpeg",".wav",".aac",".ogg",".wma"
+    ".zip", ".7z", ".rar", ".tar", ".gz", ".bz2", ".iso", ".exe", ".apk", ".xz",
+    ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".ods", ".odt", ".odp", ".odc",
+    ".pdf", ".mp4", ".avi", ".mov", ".mkv", ".flv", ".mpg", ".mpeg", ".wav", ".aac", ".ogg", ".wma"
 ];
-const HTML_EXTS = [".html",".htm",".php",".asp",".aspx",".jsp"];
+
+const HTML_EXTS = [".html", ".htm", ".php", ".asp", ".aspx", ".jsp"];
 
 function isBinaryArchive(contentType, url) {
     if (contentType && BIN_TYPES.some(type => contentType.startsWith(type))) return true;
     const u = url.toLowerCase();
     return BIN_EXTS.some(ext => u.endsWith(ext));
 }
+
 function isValidHttpUrl(str) {
     try {
         const url = new URL(str);
@@ -26,6 +30,7 @@ function isValidHttpUrl(str) {
         return false;
     }
 }
+
 function getRootUrl(currentUrl) {
     try {
         const u = new URL(currentUrl);
@@ -34,6 +39,7 @@ function getRootUrl(currentUrl) {
         return currentUrl;
     }
 }
+
 function getParentUrl(currentUrl) {
     try {
         const u = new URL(currentUrl);
@@ -46,6 +52,7 @@ function getParentUrl(currentUrl) {
         return currentUrl;
     }
 }
+
 function isBareDomain(url) {
     try {
         const u = new URL(url);
@@ -54,6 +61,7 @@ function isBareDomain(url) {
         return false;
     }
 }
+
 function isFolder(url) {
     try {
         const u = new URL(url);
@@ -63,6 +71,7 @@ function isFolder(url) {
         return false;
     }
 }
+
 function getLabel(url) {
     try {
         const u = new URL(url);
@@ -82,6 +91,7 @@ function getLabel(url) {
         return "🌐 unknown";
     }
 }
+
 function uniqueBy(arr, key) {
     const seen = new Set();
     return arr.filter(x => {
@@ -133,7 +143,7 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                         display: "📁 " + folderName + "/"
                     });
                 }
-                // Ajoute dans subfolderFiles si c'est pas un dossier
+                // Ajoute dans subfolderFiles si ce n'est pas un dossier
                 if (rel.split("/").length > 1 && !isFolder(l.href)) {
                     subfolderFiles.push(l);
                 }
@@ -373,6 +383,7 @@ module.exports = function(app) {
             res.status(502).send("Proxy error");
         }
     });
+
     app.get('/browsedownload', async (req, res) => {
         const url = req.query.url;
         if (!url || !isValidHttpUrl(url))
@@ -394,6 +405,7 @@ module.exports = function(app) {
             res.status(502).send("Proxy error");
         }
     });
+
     app.get("/browse", async (req, res) => {
         const url = req.query.url;
         if (!url || !isValidHttpUrl(url))
@@ -467,19 +479,18 @@ module.exports = function(app) {
             allLinks = uniqueBy(allLinks, "href");
 
             const currentFolderPath = getCurrentFolderPath(url);
-            const {files, folders, subfolderFiles} = splitLinksByFolder(
+            const {files, folders, subfolderFiles, otherDomains} = splitLinksByFolder(
                 allLinks,
                 currentFolderPath,
                 getRootUrl(url).replace(/\/$/, '')
             );
 
-            // Défini previewHtml vide car pas de preview pour dossier
             const previewHtml = "";
 
             res.send(`
                 <div style="font-family:monospace;padding:1em;">
                     <div class="listing-title"><b>Link explorer:</b> ${url}</div>
-                    ${renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles)}
+                    ${renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles, otherDomains)}
                     ${previewHtml}
                     <div id="navActions" style="display:flex;gap:1em;justify-content:left;margin:2em 0 0 0">
                         <a href="/browsedownload?url=${encodeURIComponent(url)}"
