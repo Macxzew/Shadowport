@@ -120,7 +120,11 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
     const subfolderFiles = [];
     const otherDomains = [];
 
-    const originDomain = new URL(origin).hostname;  // Récupère le domaine d'origine
+    const originUrl = new URL(origin);  // Création de l'objet URL pour l'URL d'origine
+    const originDomain = originUrl.hostname;  // Récupération du domaine d'origine sans sous-domaines
+
+    // Nettoyage de l'URL d'origine
+    origin = origin.trim(); // Assure qu'il n'y ait pas d'espace avant ou après l'URL
 
     for (const l of allLinks) {
         try {
@@ -130,13 +134,24 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                 : null;
             if (rel === null) continue;
 
+            // Si le lien appartient à un autre domaine, on l'ajoute dans "Other domains"
+            if (u.hostname !== originDomain) {
+                otherDomains.push({
+                    url: `/browse?url=${encodeURIComponent(u.href)}`,
+                    href: u.href,
+                    display: `🌐 ${u.hostname}`
+                });
+                continue; // Passe au lien suivant si c'est un lien externe
+            }
+
             // Vérifie si le lien est dans le dossier courant
             if (rel.length > 0 && !rel.includes("/")) {
                 files.push(l); // Fichier dans le dossier courant
             }
             else if (rel && rel.includes("/")) {
                 const folderName = rel.split("/")[0];
-                const folderHref = origin + currentFolderPath + folderName + "/";
+                // On nettoie également le chemin du dossier pour éviter les espaces
+                const folderHref = (origin + currentFolderPath + folderName + "/").trim();
                 if (!folders.has(folderHref)) {
                     folders.set(folderHref, {
                         url: `/browse?url=${encodeURIComponent(folderHref)}`,
@@ -148,15 +163,6 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                 if (rel.split("/").length > 1 && !isFolder(l.href)) {
                     subfolderFiles.push(l);
                 }
-            }
-
-            // Vérifie si le lien appartient à un autre domaine
-            if (u.hostname !== originDomain) {
-                otherDomains.push({
-                    url: `/browse?url=${encodeURIComponent(u.href)}`,
-                    href: u.href,
-                    display: `🌐 ${u.hostname}`
-                });
             }
 
         } catch (e) {
@@ -228,19 +234,27 @@ function renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles, o
 async function extractLinksFromHtml(url, html) {
     const $ = cheerio.load(html);
     let files = [];
+
+    // Extraction des liens <a href="...">
     $("a[href]").each((_, el) => {
         let href = $(el).attr("href");
         if (!href || href.startsWith("javascript:") || href.startsWith("#")) return;
+
         try {
             let abs = new URL(href, url).href;
-            if (abs === url) return;
+            if (abs === url) return; // Ignore les liens pointant vers la même page
+
             files.push({
                 url: `/browse?url=${encodeURIComponent(abs)}`,
                 href: abs,
                 display: getLabel(abs)
             });
-        } catch {}
+        } catch (err) {
+            console.error("Erreur d'extraction de lien <a>: ", err);
+        }
     });
+
+    // Extraction des liens <img src="...">
     $("img[src]").each((_, el) => {
         let src = $(el).attr("src");
         try {
@@ -250,8 +264,26 @@ async function extractLinksFromHtml(url, html) {
                 href: abs,
                 display: getLabel(abs)
             });
-        } catch {}
+        } catch (err) {
+            console.error("Erreur d'extraction de lien <img>: ", err);
+        }
     });
+
+    // Extraction des autres liens comme CSS ou JS (si nécessaire)
+    $("link[rel='stylesheet'], script[src]").each((_, el) => {
+        let href = $(el).attr("href") || $(el).attr("src");
+        try {
+            let abs = new URL(href, url).href;
+            files.push({
+                url: `/browse?url=${encodeURIComponent(abs)}`,
+                href: abs,
+                display: getLabel(abs)
+            });
+        } catch (err) {
+            console.error("Erreur d'extraction d'un lien CSS/JS: ", err);
+        }
+    });
+
     return uniqueBy(files, "href");
 }
 
@@ -263,7 +295,7 @@ async function renderPreviewBlockWithInfo(url, contentType, rootUrl, parentUrl, 
     const {files, folders, subfolderFiles, otherDomains} = splitLinksByFolder(
         linksList,
         currentFolderPath,
-        getRootUrl(url).replace(/\/$/, '')
+        getRootUrl(url).replace(/\/$/, ' ')
     );
 
     let filename;
@@ -482,7 +514,7 @@ module.exports = function(app) {
             const {files, folders, subfolderFiles, otherDomains} = splitLinksByFolder(
                 allLinks,
                 currentFolderPath,
-                getRootUrl(url).replace(/\/$/, '')
+                getRootUrl(url).replace(/\/$/, ' ')
             );
 
             const previewHtml = "";
