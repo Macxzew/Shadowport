@@ -113,7 +113,7 @@ function getCurrentFolderPath(url) {
     }
 }
 
-// Sépare fichiers et sous-dossiers à partir du dossier courant
+// Fonction pour séparer les liens dans leur dossier respectif
 function splitLinksByFolder(allLinks, currentFolderPath, origin) {
     const files = [];
     const folders = new Map();
@@ -130,8 +130,9 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                 : null;
             if (rel === null) continue;
 
+            // Vérifie si le lien est dans le dossier courant
             if (rel.length > 0 && !rel.includes("/")) {
-                files.push(l); // Fichier dans dossier courant
+                files.push(l); // Fichier dans le dossier courant
             }
             else if (rel && rel.includes("/")) {
                 const folderName = rel.split("/")[0];
@@ -149,7 +150,7 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
                 }
             }
 
-            // Vérifie si le lien appartient à un autre domaine
+            // Vérifie si le lien appartient à un autre domaine, puis le déplace vers "Other domains"
             if (u.hostname !== originDomain) {
                 otherDomains.push({
                     url: `/browse?url=${encodeURIComponent(u.href)}`,
@@ -167,7 +168,7 @@ function splitLinksByFolder(allLinks, currentFolderPath, origin) {
         files: uniqueBy(files, "href"),
         folders: Array.from(folders.values()),
         subfolderFiles: uniqueBy(subfolderFiles, "href"),
-        otherDomains: uniqueBy(otherDomains, "href")  // Retourne les liens externes
+        otherDomains: uniqueBy(otherDomains, "href")  // Déplace les liens externes vers "Other domains"
     };
 }
 
