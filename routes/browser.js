@@ -259,7 +259,7 @@ async function renderPreviewBlockWithInfo(url, contentType, rootUrl, parentUrl, 
     const lowerUrl = url.toLowerCase();
 
     const currentFolderPath = getCurrentFolderPath(url);
-    const {files, folders, subfolderFiles} = splitLinksByFolder(
+    const {files, folders, subfolderFiles, otherDomains} = splitLinksByFolder(
         linksList,
         currentFolderPath,
         getRootUrl(url).replace(/\/$/, '')
@@ -332,7 +332,7 @@ async function renderPreviewBlockWithInfo(url, contentType, rootUrl, parentUrl, 
     return `
         <div style="font-family:monospace;padding:1em;">
             <div class="listing-title"><b>Link explorer:</b> ${url}</div>
-            ${renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles)}
+            ${renderAllSections(rootUrl, parentUrl, files, folders, subfolderFiles, otherDomains)}
             <div style="margin-bottom:2em;">
                 <div style="font-weight:bold;color:#818cf8;margin-bottom:0.3em;">File preview</div>
                 ${previewHtml}
@@ -429,7 +429,6 @@ module.exports = function(app) {
         const isFile = isExplicitFile(url);
 
         if (!isFile) {
-            // Cas dossier
             let isApacheDir = false;
             let html = "";
             try {
@@ -509,7 +508,6 @@ module.exports = function(app) {
             return;
         }
 
-        // Cas fichier explicitement demandé
         try {
             let linksList = [];
             if (contentType.includes("html") || HTML_EXTS.some(ext => url.toLowerCase().endsWith(ext))) {
@@ -524,7 +522,6 @@ module.exports = function(app) {
                 } catch {}
             }
 
-            // Preview pour type fichier (texte, image, binaire...)
             const previewHtml = await renderPreviewBlockWithInfo(url, contentType, rootUrl, parentUrl, linksList, contentLength);
             res.send(previewHtml);
 
