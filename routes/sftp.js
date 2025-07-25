@@ -18,7 +18,6 @@ module.exports = (app, SFTPClient, path, Readable, upload) => {
         await sftp.end();
       }
     } catch {
-      // ignore errors during close
     }
   }
 
